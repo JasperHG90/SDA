@@ -4,3 +4,5 @@
 
 # Here is my code
 myfirstfunction <- function() {}
+
+mysecondfunction <- function() {}
