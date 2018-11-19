@@ -14,4 +14,4 @@ rm(list=ls())
 source("R/utilities/install_dependencies.R")
 
 # This script loads and preprocesses the data
-source("R/utilities/load_data.R")
+source("R/utilities/preprocess_data.R")
