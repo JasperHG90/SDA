@@ -30,7 +30,7 @@ for(dependency in dependencies) {
   }
   
   ## Load package
-  library(dependency, character.only = TRUE)
+  #library(dependency, character.only = TRUE)
   
 }
 
