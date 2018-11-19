@@ -15,7 +15,7 @@
 ip <- installed.packages()
 
 # Packages to be installed (just add to the vector if you have new dependencies)
-dependencies <- c("dplyr", "tidyr", "purrr", "stringr")
+dependencies <- c("dplyr", "tidyr", "purrr", "stringr", "rvest")
 
 # For each dependency, install and / or load
 for(dependency in dependencies) {
