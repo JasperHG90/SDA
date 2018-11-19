@@ -11,11 +11,6 @@
 ##
 ## ----------------------------------------------------------------------------
 
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(purrr)
-
 # If data already downloaded, load and move on
 if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
   
@@ -23,6 +18,16 @@ if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
   gpg_meta <- readRDS("data/gpg_meta.rds")
   
 } else {
+  
+  # Load libraries
+  library(dplyr)
+  library(tidyr)
+  library(stringr)
+  library(purrr)
+  library(forcats)
+  
+  cat("\nPre-processed data not found. Running one-time pre-processing steps ...\n")
+  t1 <- Sys.time()
   
   # Check if county data found. Else: download
   if(!"counties.rds" %in% list.files("data")) {
@@ -99,7 +104,8 @@ if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
     matches <- map(tolower(data), str_detect, p)
     
     ## For each element, look up province if found. Else return NA
-    found <- map(matches, function(x) ifelse(all(x == FALSE), NA, p[x]))
+    found <- map(matches, function(x) ifelse(all(x == FALSE), NA, p[x])) %>%
+      unlist()
     
     ## Return
     return(found)
@@ -172,17 +178,25 @@ if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
     
   }
   
-  # Merge with sic cores
+  # Merge with sic cores & set proper data types
   gpg_core <- gpg_core %>%
-    left_join(., sic, by="SicDivision")
-  
-  # Remove objects that are no longer needed
-  keep <- c("gpg_core", "gpg_meta")
-  rm(list=setdiff(ls(), keep))
+    left_join(., sic, by="SicDivision") %>%
+    mutate(county = as_factor(county),
+           section = as_factor(SECTION),
+           division = as_factor(DIVISION),
+           class = as_factor(CLASS)) %>%
+    # Drop capital-case columns
+    select(-SECTION, -DIVISION, -CLASS)
   
   # Write data
   saveRDS(gpg_core, "data/gpg_core.rds")
   saveRDS(gpg_meta, "data/gpg_meta.rds")
+  
+  cat(paste0("\nDone in ", round(as.numeric(Sys.time() - t1)), " seconds\n"))
+  
+  # Remove objects that are no longer needed
+  keep <- c("gpg_core", "gpg_meta")
+  rm(list=setdiff(ls(), keep))
   
 }
 
