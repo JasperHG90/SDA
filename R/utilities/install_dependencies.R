@@ -33,3 +33,6 @@ for(dependency in dependencies) {
   library(dependency, character.only = TRUE)
   
 }
+
+# Clean environment
+rm(ip, dependencies, dependency)
