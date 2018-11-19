@@ -14,8 +14,45 @@
 library(dplyr)
 library(tidyr)
 library(stringr)
-library(rvest)
 library(purrr)
+
+# Check if county data found. Else: download
+if(!"counties.rds" %in% list.files("data")) {
+  
+  # Load rvest
+  library(rvest)
+  
+  # Download county data
+  cat("\nCounty data not found. Downloading now ...\n")
+  
+  ## Wikipedia url with GB counties
+  wurl <- "https://en.wikipedia.org/wiki/List_of_counties_of_the_United_Kingdom"
+  
+  ## Load page
+  p <- read_html(wurl) %>%
+    # Extract all tables
+    html_table(fill=TRUE) %>%
+    # Places in brackets should be own observation
+    map(., function(x) str_replace_all(x$County, "\\)", "") %>%
+          # Split if string contains open bracket, split at this bracket
+          str_split("\\(")) %>%
+    # Unlist the list (turn into vector)
+    unlist() %>%
+    ## Remove all non-alphanumeric strings
+    str_replace_all(., "[^[:alnum:][:space:]]", "") %>%
+    ## No caps
+    tolower() %>%
+    ## Trim whitespace at the beginning and end of each string
+    trimws()
+  
+  # To file
+  saveRDS(p, "data/counties.rds")
+  
+} else{
+  
+  p <- readRDS("data/counties.rds")
+  
+}
 
 ## Helper functions ----
 
@@ -49,26 +86,6 @@ retrieve_postal_code <- function(data) {
 #' @return if county is found, function will return county name. Else, it returns NA
 #' @seealso: https://en.wikipedia.org/wiki/List_of_counties_of_the_United_Kingdom
 match_counties <- function(data) {
-  
-  ## Wikipedia url with GB counties
-  wurl <- "https://en.wikipedia.org/wiki/List_of_counties_of_the_United_Kingdom"
-  
-  ## Load page
-  p <- read_html(wurl) %>%
-    # Extract all tables
-    html_table(fill=TRUE) %>%
-    # Places in brackets should be own observation
-    map(., function(x) str_replace_all(x$County, "\\)", "") %>%
-                       # Split if string contains open bracket, split at this bracket
-                          str_split("\\(")) %>%
-    # Unlist the list (turn into vector)
-    unlist() %>%
-    ## Remove all non-alphanumeric strings
-    str_replace_all(., "[^[:alnum:][:space:]]", "") %>%
-    ## No caps
-    tolower() %>%
-    ## Trim whitespace at the beginning and end of each string
-    trimws()
   
   ## For each address, try to match a province
   matches <- map(tolower(data), str_detect, p)
@@ -111,7 +128,8 @@ mfbreakdown <- gpg %>%
   # Join with original data
   inner_join(gpg, "uuid") %>%
   # Extract postal code using regular expression
-  mutate(postal_code = )
+  mutate(postal_code = retrieve_postal_code(Address),
+         county = match_counties(Address))
 
 # Expand sic codes into multiple columns
 # sic codes are comma-delimited. We split each observation into m separate vectors.
