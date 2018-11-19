@@ -19,6 +19,10 @@ library(purrr)
 
 ## Helper functions ----
 
+#' Define a helper to extract postal codes from company address
+#' 
+#' @param data string. Vector containing company addresses
+#' @return if postal code is found, function returns the postal code. If not found, returns NA
 retrieve_postal_code <- function(data) {
   
   ## Match postal code
@@ -39,8 +43,11 @@ retrieve_postal_code <- function(data) {
   
 }
 
-## Helper function to match counties against a list 
-## Source: 
+#' Helper function that matches company addresses to a list of UK counties
+#' 
+#' @param data string. Vector containing company addresses
+#' @return if county is found, function will return county name. Else, it returns NA
+#' @seealso: https://en.wikipedia.org/wiki/List_of_counties_of_the_United_Kingdom
 match_counties <- function(data) {
   
   ## Wikipedia url with GB counties
@@ -51,11 +58,26 @@ match_counties <- function(data) {
     # Extract all tables
     html_table(fill=TRUE) %>%
     # Places in brackets should be own observation
-    map(., function(x) str_split(str_replace_all(x$County, "\\)", ""), "\\(")) %>%
-    # Unlist the list
+    map(., function(x) str_replace_all(x$County, "\\)", "") %>%
+                       # Split if string contains open bracket, split at this bracket
+                          str_split("\\(")) %>%
+    # Unlist the list (turn into vector)
     unlist() %>%
     ## Remove all non-alphanumeric strings
-    str_replace_all(., "[^[:alnum:][:space:]]", "")
+    str_replace_all(., "[^[:alnum:][:space:]]", "") %>%
+    ## No caps
+    tolower() %>%
+    ## Trim whitespace at the beginning and end of each string
+    trimws()
+  
+  ## For each address, try to match a province
+  matches <- map(tolower(data), str_detect, p)
+  
+  ## For each element, look up province if found. Else return NA
+  found <- map(matches, function(x) ifelse(all(x == FALSE), NA, p[x]))
+  
+  ## Return
+  return(found)
   
 }
 
@@ -72,6 +94,7 @@ ss_names <- names(gpg)[11:18]
 # Preprocess the data
 #  1. Add columns with percentage men / women
 #  2. Extract postal code / county from address
+#  3. Join with original dataset
 mfbreakdown <- gpg %>%
   # SUbset variables
   select(c("uuid", ss_names)) %>%
