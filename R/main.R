@@ -124,7 +124,12 @@ perc_by_division %>%
                                group_by(division) %>% 
                                summarize(number_companies = n())) %>%
                    # Add percentages
-                   mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2))) %>%
+                   mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2)) %>%
+                   # Add mean/median difference in income
+                   left_join(., gpg_core %>%
+                                  group_by(division) %>%
+                                  summarize(avg_mean_diff = round(mean(DiffMeanHourlyPercent), digits=2),
+                                            avg_med_diff = round(mean(DiffMedianHourlyPercent), digits=2)))) %>%
       # Cat to console
       print()
     
