@@ -104,6 +104,7 @@ perc_by_division %>%
   # Plot the data. Reorder the x-values (SIC division) by the order we just calculated.
   (function(data) {
     
+    ## Plot
     ggplot(data, aes(x=reorder(division,order) , y=avgperc, fill=variable)) +
       # Bar plot --> statistic to show is just the number
       geom_bar(stat = "identity") +
@@ -112,7 +113,17 @@ perc_by_division %>%
       # Set the x-axis labels at an angle and adjust the height
       theme(axis.text.x = element_text(angle = 45, hjust=1))
     
-    knitr::kable(data %>% filter(variable == "male") %>% select(division, order, avgperc) %>%
-                   mutate(perc_male = round(avgperc, digits = 2)) %>% select(-avgperc))
+    ## Also print a table with SIC divisions, order, percentage of males, number of companies in that division & percentage
+    knitr::kable(data %>% 
+                   filter(variable == "male") %>% 
+                   select(division, order, avgperc) %>%
+                   mutate(perc_male = round(avgperc, digits = 2)) %>% 
+                   select(-avgperc) %>%
+                   # Join this data with a quick calculation of the number of companies / division
+                   left_join(., gpg_core %>% 
+                                  group_by(division) %>% 
+                                  summarize(number_companies = n())) %>%
+                    # Add percentages
+                   mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2)))
     
   })
