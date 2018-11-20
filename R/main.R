@@ -105,7 +105,7 @@ perc_by_division %>%
   (function(data) {
     
     ## Plot
-    ggplot(data, aes(x=reorder(division,order) , y=avgperc, fill=variable)) +
+    p <- ggplot(data, aes(x=reorder(division,order) , y=avgperc, fill=variable)) +
       # Bar plot --> statistic to show is just the number
       geom_bar(stat = "identity") +
       # Modidify the x-axis s.t. we abbreviate the industry texts (some are very long)
@@ -121,9 +121,14 @@ perc_by_division %>%
                    select(-avgperc) %>%
                    # Join this data with a quick calculation of the number of companies / division
                    left_join(., gpg_core %>% 
-                                  group_by(division) %>% 
-                                  summarize(number_companies = n())) %>%
-                    # Add percentages
-                   mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2)))
+                               group_by(division) %>% 
+                               summarize(number_companies = n())) %>%
+                   # Add percentages
+                   mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2))) %>%
+      # Cat to console
+      print()
+    
+    # Return plot
+    return(p)
     
   })
