@@ -23,7 +23,7 @@ for(dependency in dependencies) {
   ## Install package if not in library
   if( !dependency %in% ip[,1] ) {
     
-    print(dependency)
+    cat(paste0("\nInstalling ", dependency, "\n"))
     
     install.packages(dependency, character.only=TRUE)
     
