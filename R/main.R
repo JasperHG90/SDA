@@ -137,3 +137,81 @@ perc_by_division %>%
     return(p)
     
   })
+
+# By county & division
+## Not a lot of difference over these variables.
+byCounty <- gpg_core %>%
+  select(county, division, female, male, DiffMeanHourlyPercent, DiffMedianHourlyPercent) %>%
+  group_by(county, division) %>%
+  summarize(n = n(),
+            avgmale = mean(male),
+            avgfem = mean(female),
+            avg_mean_perc = mean(DiffMeanHourlyPercent),
+            avg_med_perc = mean(DiffMedianHourlyPercent)) %>%
+  arrange(county,desc(n))
+
+## 1. For the population level data, there are several measures of pay inequality reported. First, inspect at the population level, whether there is a difference in the mean employment and payments made to males and females across the UK.
+
+payments <- gpg_core %>%
+  summarize(avg = mean(DiffMeanHourlyPercent)) %>%
+  print()
+## The average mean percentage difference between pay for men and women is 14.4%
+
+## 1b. Apart from regular (often monthly) payments there are also bonus payments. Include bonus payments as well now.
+
+payments <- gpg_core %>%
+  summarize(avg = mean(DiffMeanHourlyPercent),
+            avgbonus = mean(DiffMeanBonusPercent)) %>%
+  print()
+## The average mean bonus percentage difference is 14.1% in favor of men
+
+# 3. Apart from means, statistics are also included on quartiles of the income distributions, as well as the median. Again, study the payment gap at the population level. Is your conclusion in question 2 different from 1?
+
+medPayments <- gpg_core %>%
+  summarize(avg = mean(DiffMedianHourlyPercent)) %>%
+  print()
+## Median bonus percentage difference is 12.2% in favor of men
+library(stringr)
+library(purrr)
+library(forcats)
+
+gpg_core %>%
+  select(18:25) %>%
+  gather(variable, value) %>%
+  group_by(variable) %>%
+  summarize(avg = mean(value)) %>%
+  mutate(gender = ifelse(str_detect(variable, "Female"), "female", "male"),
+         quantile = map_chr(variable, function(x) str_replace_all(tolower(x), "[fe]{0,2}male", "")) %>%
+                              as_factor() %>%
+                              fct_relevel( c("lowerquartile", "lowermiddlequartile", "uppermiddlequartile", "topquartile"))) %>%
+  ggplot(., aes(x=quantile, y=avg, color = gender)) +
+    geom_line(aes(group = gender)) +
+    geom_point() +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust=1))
+## Q. this data gives us nothing about the payment gap PER level, right? We cannot see if, say, the payment gap is bigger at the top than at the bottom since we don't have these data. All we can say is that the income distributions are skewed in favor of men, which is likely one reason that the payment gap exists in the first place. 
+
+# 3. Imagine that instead of using the population, we want to sample. What would your conclusions be for the size of the gender payment gap if you would randomly sample 1000 cases at most from this dataset?
+
+library(survey)
+library(sampling)
+
+# Total number of observations
+N <- nrow(gpg_core)
+n <- 1000
+
+# Take SRS 
+set.seed(600)
+samp <- srswor(n, N)
+
+# Subset data
+sample <- gpg_core %>%
+  filter(as.logical(samp)) %>%
+  mutate(fpc = N)
+
+# Surveydesign with equal probabilities
+swordesign <- svydesign(id=~0,fpc=~fpc, data = sample)
+
+# Size of gender pay gap for mean and median pay
+svymean(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign)
+svyquantile(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign, c(.25,.50,.75),ci=TRUE)
