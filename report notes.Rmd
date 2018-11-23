@@ -14,13 +14,29 @@ b. Apart from regular (often monthly) payments there are also bonus payments. In
 The gender pay gap in the UK is also evident in the distribution of bonus payments; defined as any payment additional to an employee's salary. The pay gap for bonus payments stands at 14.1% at the UK population level, again in favour of men. 
 
 2.	Apart from means, statistics are also included on quartiles of the income distributions, as well as the median. Again, study the payment gap at the population level. Is your conclusion in question 2 different from 1?
+
+As previously mentioned, comparing the median (hourly) wage within a company can be a more effective way to study the gender pay gap. Therefore, by averaging the median wage across all UK companies, we found that the median male employee earns 12.2% more than his female counterpart. 
+
 3.	Imagine that instead of using the population, we want to sample. What would your conclusions be for the size of the gender payment gap if you would randomly sample 1000 cases at most from this dataset?
+
+
 4.	Stratification can potentially yield a more efficient sample. The dataset provides two variables that can be used for stratification: 1. The size of the company (measured in no. of employees), and the type of industry (“SicDivision”). Note that there are many division codes, you may decide to recode this variable into fewer categories. Describe if, why and how you recode this variable if need be. 
 Both can be thought of as potential variables to stratify on. We can oversample from particular large or small companies, and do the same for industry type (SicDivision).
+
+
 5.	Investigate the variation in the gender pay gap within and between both strata in the population dataset. Make a motivated choice for whether you want to stratify, how you made decision for how to stratify, and how you want to stratify. 
+
+
 6.	(related to Q5.) If you would be limited to sample at most 1000 companies, what would your conclusion be about the size of the gender pay gap? What is your precision? How much more precise is your answer as compared to your answers under questions 1. And 2.?
+
+
 7.	Imagine that we do not have a fixed budget, but would rather have a level of precision as determined by the Coefficient of Variation of .01. Under the sampling design you specified under Q5-6, how large should the sample be to achieve a CV of 0.01 for the size of the gender pay gap in the mean income? Use the same strata as in Q5-6.
+
+
 8.	Another way to think about sampling is not at the company level, but at the level of the individual. Unequal pay at very large companies of course has a larger impact than at small companies. We lack data for companies with <250 employees, but could still weight the data according to the size of the company to inspect the gender pay gap for individuals in the UK who work at companies with > 250 employees.
+
+
 a.	Describe what you would if the goal was not to study the gender pay gap at companies, but for individuals at companies. 
+
 b.	Use the strategy you describe under a. to finally say something about the size of the gender pay gap.
 
