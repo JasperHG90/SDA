@@ -75,9 +75,11 @@ gpg_core %>%
     geom_density(alpha=0.3) +
     theme_bw() 
 ## Nb. the graphs are symmetric because these are proportions. We can see that there are a lot more companies where there is a relatively small percentage of women. Does this hold across sectors?
+## Graph is bimodal
+##  - Women peak at +-22% and 50%, men peak at 50% and +-78%
 
 # Look at percentages male/female by SIC division
-perc_by_division <- gpg_core %>%
+gpg_core %>%
   # Select male/female/division columns
   select(male, female, division) %>%
   # Take columns and reshape to two columns (variable names and values), disregard division, which should stay in its own column
@@ -87,20 +89,29 @@ perc_by_division <- gpg_core %>%
   # Per division and gender group, calculate the average percentage of males/females
   summarize(avgperc = mean(value)) %>%
   # Ungroup the data
-  ungroup()
-
-# Create an order (this is useful for the plot below). We are going to order the SIC divisions by the % of males
-perc_by_division %>%
-  # Filter for males
-  filter(variable == "male") %>%
-  # Order s.t. highest --> lowest
-  arrange(desc(avgperc)) %>%
-  # Add an ordering per SIC division
-  mutate(order = 1:n()) %>%
-  # Remove the variable and percentage columns
-  select(-avgperc, -variable) %>%
-  # Merge the data with the perc_by_division dataset, which now has a new column 'order' to specify the order of the divisions
-  left_join(perc_by_division) %>%
+  ungroup() %>%
+  # This anonymous function further subsets the data and then merges it with the results up until now
+  (function(data) {
+    
+    # Create an order for the SIC sections (this is useful for the plot below). We are going to order the SIC divisions by the % of males
+    
+    # Save data in temporary variable
+    perc_by_division <- data
+    
+    # Further subset the data
+    data %>%
+      # Filter for males
+      filter(variable == "male") %>%
+      # Order s.t. highest --> lowest
+      arrange(desc(avgperc)) %>%
+      # Add an ordering per SIC division
+      mutate(order = 1:n()) %>%
+      # Remove the variable and percentage columns
+      select(-avgperc, -variable) %>%
+      # Merge the data with the perc_by_division dataset, which now has a new column 'order' to specify the order of the divisions
+      left_join(perc_by_division) 
+    
+  }) %>%
   # Plot the data. Reorder the x-values (SIC division) by the order we just calculated.
   (function(data) {
     
@@ -215,3 +226,5 @@ swordesign <- svydesign(id=~0,fpc=~fpc, data = sample)
 # Size of gender pay gap for mean and median pay
 svymean(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign)
 svyquantile(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign, c(.25,.50,.75),ci=TRUE)
+
+## We would conclude pretty much the same thing: mean around 14%, median around 12%
