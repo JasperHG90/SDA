@@ -9,6 +9,8 @@ Introduction / background / summary:
 
 Our analysis found that, across the population, the average monthly wage for men was 14.4% higher than that for women. It should be noted that this provides only an initial insight into the extent of the gender gap in the UK, and should be interpreted with caution. For instance, it is more relevant to assess the size of gender pay gaps in terms of the median wage, so that the few disproportionatley high earners do not skew the results. 
 
+It would be nice if we could weight the population mean based on the size of the companies, so that the larger companies hold more influence on the population statistics. However, with the data provided, it would be difficult to achieve a meaningful accuracy, given that we are not provided with the exact size of the companies. 
+
 b. Apart from regular (often monthly) payments there are also bonus payments. Include bonus payments as well now.
 
 The gender pay gap in the UK is also evident in the distribution of bonus payments; defined as any payment additional to an employee's salary. The gender gap for bonus payments stands at 14.1% at the UK population level, again in favour of men. 
@@ -20,8 +22,10 @@ As previously mentioned, comparing the median (hourly) wage within a company can
 3.	Imagine that instead of using the population, we want to sample. What would your conclusions be for the size of the gender payment gap if you would randomly sample 1000 cases at most from this dataset?
 
 
+
 4.	Stratification can potentially yield a more efficient sample. The dataset provides two variables that can be used for stratification: 1. The size of the company (measured in no. of employees), and the type of industry (“SicDivision”). Note that there are many division codes, you may decide to recode this variable into fewer categories. Describe if, why and how you recode this variable if need be. 
 Both can be thought of as potential variables to stratify on. We can oversample from particular large or small companies, and do the same for industry type (SicDivision).
+
 
 
 5.	Investigate the variation in the gender pay gap within and between both strata in the population dataset. Make a motivated choice for whether you want to stratify, how you made decision for how to stratify, and how you want to stratify. 
