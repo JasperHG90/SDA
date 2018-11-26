@@ -157,6 +157,17 @@ payments <- gpg_core %>%
   print()
 ## The average mean percentage difference between pay for men and women is 14.4%
 
+## it is (I think) useful to look at the prevalence of the gender gap in favour of men, i.e. to see in how many companies do men earn a higher average wage
+neg_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent < 0), ]
+nrow(neg_gap)
+##the gender gap (in the mean hourly rate) favouring women is prevalent in 749, or 11.15%, of the companies listed in the dataset
+pos_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent >= 0), ]
+nrow(pos_gap)
+##in the remaining 5964 companies, or 88.85%, the mean wage is equal or is higher for male employees
+
+hist(gpg_core$DiffMeanHourlyPercent, main = "Gender gap in mean hourly pay (%)", xlim = c(-1, 1), xlab = "Size of pay gap")
+##the histogram clearly shows that the distribution of the gender pay gap is heavily skewed in favour of males. 
+
 ## 1b. Apart from regular (often monthly) payments there are also bonus payments. Include bonus payments as well now.
 
 payments <- gpg_core %>%
@@ -171,6 +182,18 @@ medPayments <- gpg_core %>%
   summarize(avg = mean(DiffMedianHourlyPercent)) %>%
   print()
 ## Median bonus percentage difference is 12.2% in favor of men
+
+#again just looking at the number of companies in which the median pay favours males, etc.
+neg_gap <- gpg_core[which(gpg_core$DiffMedianHourlyPercent < 0), ]
+nrow(neg_gap)
+##the gender gap (in the median hourly rate) favouring women is prevalent in 903, or 13.45%, of the companies listed in the dataset
+pos_gap <- gpg_core[which(gpg_core$DiffMedianHourlyPercent >= 0), ]
+nrow(pos_gap)
+##in the remaining 5810 companies, or 86.55%, the median wage is equal or is higher for male employees
+
+hist(gpg_core$DiffMedianHourlyPercent, main = "Gender gap in median hourly pay (%)", xlim = c(-1, 1), xlab = "Size of pay gap")
+##this shows that the distribution of the percentage gender gap in the median payments is also heavily skewed in favour of males 
+
 library(stringr)
 library(purrr)
 library(forcats)
