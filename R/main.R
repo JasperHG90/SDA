@@ -150,6 +150,22 @@ byCounty <- gpg_core %>%
             avg_med_perc = mean(DiffMedianHourlyPercent)) %>%
   arrange(county,desc(n))
 
+# Create upper and lower bound for the median difference to filter
+repMean <- mean(gpg_core$DiffMedianHourlyPercent)
+lower_bound <- repMean - 2*sd(gpg_core$DiffMedianHourlyPercent)
+upper_bound <- repMean + 2*sd(gpg_core$DiffMedianHourlyPercent)
+
+ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
+                #           DiffMedianHourlyPercent <= upper_bound) 
+       ,aes(x=EmployerSize , 
+            y=DiffMedianHourlyPercent, 
+            group=EmployerSize)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(-1,1,0.2)) + 
+  geom_hline(yintercept=0, color = "red")
+
 ## 1. For the population level data, there are several measures of pay inequality reported. First, inspect at the population level, whether there is a difference in the mean employment and payments made to males and females across the UK.
 
 payments <- gpg_core %>%
@@ -238,3 +254,5 @@ swordesign <- svydesign(id=~0,fpc=~fpc, data = sample)
 # Size of gender pay gap for mean and median pay
 svymean(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign)
 svyquantile(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign, c(.25,.50,.75),ci=TRUE)
+
+# Calculate bias part and variance part
