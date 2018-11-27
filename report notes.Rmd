@@ -26,6 +26,7 @@ As previously mentioned, comparing the median (hourly) wage within a company can
 4.	Stratification can potentially yield a more efficient sample. The dataset provides two variables that can be used for stratification: 1. The size of the company (measured in no. of employees), and the type of industry (“SicDivision”). Note that there are many division codes, you may decide to recode this variable into fewer categories. Describe if, why and how you recode this variable if need be. 
 Both can be thought of as potential variables to stratify on. We can oversample from particular large or small companies, and do the same for industry type (SicDivision).
 
+We cannot sample 1000 / 7 from each EmployerSize category, because we do not have enough in all of the size divisions. Therefore, we have sampled from each size division with equal probability (CHECK! THIS WAS CONFUSING). (We have roughly taken a proportion of 1000/6713 = 14.89% from each size division) 
 
 
 5.	Investigate the variation in the gender pay gap within and between both strata in the population dataset. Make a motivated choice for whether you want to stratify, how you made decision for how to stratify, and how you want to stratify. 
