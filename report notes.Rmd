@@ -9,7 +9,9 @@ Introduction / background / summary: (VERY rough at the moment...)
 The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs?
 
 This report will focus on the wage gap in the UK in 2017. The data we analyse throughout the report comprise of all companies with over 250 employees, and a small amount of smaller companies. As of 2017, it is required by the UK government that all such companies provide data including....
-Our aim is to create an efficient sampling design, from which we can make accurate calculations by using a smaller sample. 
+Our aim is to create an efficient sampling design, from which we can make accurate calculations by using a smaller sample. We will compare the precision of a number of different such designs. Their accuracy will be measured against the results obtained from the full data/population analysis. 
+
+
 #1.	a. For the population level data, there are several measures of pay inequality reported. First, inspect at the population level, whether there is a difference in the mean employment and payments made to males and females across the UK. 
 
 Our analysis found that, across the population (of provided data), the average monthly wage for men was 14.4% higher than that for women. It should be noted that this provides only an initial insight into the extent of the gender gap in the UK, and should be interpreted with caution. For instance, it is more relevant to assess the size of gender pay gaps in terms of the median wage, so that the few disproportionately high earners do not skew the results. 
