@@ -5,14 +5,16 @@ output: html_notebook
 
 ### PLEASE FEEL FREE TO CHOP / CHANGE / DELETE / ADD AS YOU SEE FIT ###
 
-Introduction / background / summary:
+Introduction / background / summary: (VERY rough at the moment...)
+The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs?
 
-
+This report will focus on the wage gap in the UK in 2017. The data we analyse throughout the report comprise of all companies with over 250 employees, and a small amount of smaller companies. As of 2017, it is required by the UK government that all such companies provide data including....
+Our aim is to create an efficient sampling design, from which we can make accurate calculations by using a smaller sample. 
 #1.	a. For the population level data, there are several measures of pay inequality reported. First, inspect at the population level, whether there is a difference in the mean employment and payments made to males and females across the UK. 
 
 Our analysis found that, across the population (of provided data), the average monthly wage for men was 14.4% higher than that for women. It should be noted that this provides only an initial insight into the extent of the gender gap in the UK, and should be interpreted with caution. For instance, it is more relevant to assess the size of gender pay gaps in terms of the median wage, so that the few disproportionately high earners do not skew the results. 
 
-To improve the accuracy of this 'population gender gap' we should weight the population mean based on the size of the companies, so that the larger companies hold more influence on the population statistics. However, with the data provided, it would be difficult to achieve a meaningful accuracy, given that we are not provided with the exact size of the companies. 
+To improve the accuracy of this 'population gender gap' we should weight / should have weighted the population mean based on the size of the companies, so that the larger companies hold more influence on the population statistics. However, with the data provided, it would be difficult to achieve a meaningful accuracy, given that we are not provided with the exact size of the companies. 
 
 A brief analysis into the prevalence of the gender gap, namely in how many companies there exists a disparity in wages based on gender, revealed the following:
 749, or 11.15%, of the companies in the dataset exhibited a gender gap (in the average hourly rate) favouring women, whereas 5910 companies, or 88.03%, paid men a higher average wage. (The remaining 0.008% of companies exhibited no gender wage gap). This indicates that many of the industry-wide differences in pay are likely to favour men. These figures are accompanied by the histogram (Figure XX), showing a heavy skew towards a 'positive' pay gap. Recall that a positive pay gap represents one in which males receive a higher wage than females.
@@ -58,12 +60,12 @@ Given that the premise of stratified samples is to increase the precision/ lower
 
 #6.	(related to Q5.) If you would be limited to sample at most 1000 companies, what would your conclusion be about the size of the gender pay gap? What is your precision? How much more precise is your answer as compared to your answers under questions 1. And 2.?
 
+#I do believe that we are/will be answering Q4, 5, 6 together at the same time when we discuss our methods.
 
 #7.	Imagine that we do not have a fixed budget, but would rather have a level of precision as determined by the Coefficient of Variation of .01. Under the sampling design you specified under Q5-6, how large should the sample be to achieve a CV of 0.01 for the size of the gender pay gap in the mean income? Use the same strata as in Q5-6.
 
 
 #8.	Another way to think about sampling is not at the company level, but at the level of the individual. Unequal pay at very large companies of course has a larger impact than at small companies. We lack data for companies with <250 employees, but could still weight the data according to the size of the company to inspect the gender pay gap for individuals in the UK who work at companies with > 250 employees.
-
 
 #a.	Describe what you would if the goal was not to study the gender pay gap at companies, but for individuals at companies. 
 
