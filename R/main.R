@@ -311,6 +311,10 @@ a <- aov(DiffMedianHourlyPercent ~ div_shortened, gpg_core)
 # Run post-hoc tests
 TukeyHSD(a, conf.level=0.95) # --> there are differences between groups
 
+# Answer the following question:
+#
+# Make a motivated choice for whether you want to stratify, how you made decision for how to stratify, and how you want to stratify. 
+
 # Based on the above analysis, we would conclude the following:
 #  (1) the EmployerSize variable is not a useful stratification variable for several reasons.
 #     - The variance between groups is not big enough. The variance within groups is large.
@@ -319,9 +323,14 @@ TukeyHSD(a, conf.level=0.95) # --> there are differences between groups
 
 # Based on these observations, we would choose to stratify based on company division. 
 
-# Answer the following question:
-#
-# Make a motivated choice for whether you want to stratify, how you made decision for how to stratify, and how you want to stratify. 
+# These two divisions are too small to be sampled:
+# -ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES   3
+# -ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS                     3
+
+# We exclude these two divisions for the following reasons:
+# 1. There are only included 6 data points, which are difficult to sampling.
+# 2. They contain less than 0.09% of population.
+# 3. The divisions themself have special characteristics. Therefore, it is not possible to combine with other divisions. 
 
 # 6. (related to Q5.) If you would be limited to sample at most 1000 companies, what would your conclusion be about the size of the gender pay gap? What is your precision? How much more precise is your answer as compared to your answers under questions 1. And 2.? 
 
@@ -359,17 +368,10 @@ stratdesign_optim <- svydesign(ids=sample_optim$uuid,
 svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)
 
 ## What are our conclusions about the size of the gender gap based on this sample?
+#   - The results show that we are still getting good estimates for the mean difference in hourly pay. The mean values are closer to the actual population values.
 ## What is our precision?
+#   - The SE of both stratified samples is smaller than the SRS. The design effect is 0.8771 for the proportional-to-size stratified sample and 0.8685 for the optimally allocated stratified sample.
 ## Precision compared to stratified sample with proportion-to-size sampling & SRS?
 
 # Summary for each division
 summary(as.factor(gpg_core$division))
-
-# These two divisions are too small to be sampled:
-# -ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES   3
-# -ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS                     3
-
-# We exclude these two divisions for the following reasons:
-# 1. There are only included 6 data points, which are difficult to sampling.
-# 2. They contain less than 0.09% of population.
-# 3. The divisions themself have special characteristics. Therefore, it is not possible to combine with other divisions. 
