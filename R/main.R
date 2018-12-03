@@ -247,3 +247,14 @@ svymean(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign)
 #working with this simple random sample of 1000 companies, we find that the gender pay gap (in %) stands at 12.56% and 14.88% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2% and 14.1%. 
 
 svyquantile(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign, c(.25,.50,.75),ci=TRUE)
+
+# Summary for each division
+summary(as.factor(gpg_core$division))
+
+# Only these two divisions are too small to be sampled:
+# ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES   3
+# ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS                     3
+
+
+
+
