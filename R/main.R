@@ -79,68 +79,6 @@ gpg_core %>%
     theme_bw() 
 ## Nb. the graphs are symmetric because these are proportions. We can see that there are a lot more companies where there is a relatively small percentage of women. Does this hold across sectors?
 
-# Look at percentages male/female by SIC division
-perc_by_division <- gpg_core %>%
-  # Select male/female/division columns
-  select(male, female, division) %>%
-  # Take columns and reshape to two columns (variable names and values), disregard division, which should stay in its own column
-  gather(variable, value, -division) %>%
-  # Group by division and gender (variable)
-  group_by(division, variable) %>%
-  # Per division and gender group, calculate the average percentage of males/females
-  summarize(avgperc = mean(value)) %>%
-  # Ungroup the data
-  ungroup()
-
-# Create an order (this is useful for the plot below). We are going to order the SIC divisions by the % of males
-perc_by_division %>%
-  # Filter for males
-  filter(variable == "male") %>%
-  # Order s.t. highest --> lowest
-  arrange(desc(avgperc)) %>%
-  # Add an ordering per SIC division
-  mutate(order = 1:n()) %>%
-  # Remove the variable and percentage columns
-  select(-avgperc, -variable) %>%
-  # Merge the data with the perc_by_division dataset, which now has a new column 'order' to specify the order of the divisions
-  left_join(perc_by_division) %>%
-  # Plot the data. Reorder the x-values (SIC division) by the order we just calculated.
-  (function(data) {
-    
-    ## Plot
-    p <- ggplot(data, aes(x=reorder(division,order) , y=avgperc, fill=variable)) +
-      # Bar plot --> statistic to show is just the number
-      geom_bar(stat = "identity") +
-      # Modidify the x-axis s.t. we abbreviate the industry texts (some are very long)
-      scale_x_discrete(label = function(x) abbreviate(x, minlength=20)) +
-      # Set the x-axis labels at an angle and adjust the height
-      theme(axis.text.x = element_text(angle = 45, hjust=1))
-    
-    ## Also print a table with SIC divisions, order, percentage of males, number of companies in that division & percentage
-    knitr::kable(data %>% 
-                   filter(variable == "male") %>% 
-                   select(division, order, avgperc) %>%
-                   mutate(perc_male = round(avgperc, digits = 2)) %>% 
-                   select(-avgperc) %>%
-                   # Join this data with a quick calculation of the number of companies / division
-                   left_join(., gpg_core %>% 
-                               group_by(division) %>% 
-                               summarize(number_companies = n())) %>%
-                   # Add percentages
-                   mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2)) %>%
-                   # Add mean/median difference in income
-                   left_join(., gpg_core %>%
-                                  group_by(division) %>%
-                                  summarize(avg_mean_diff = round(mean(DiffMeanHourlyPercent), digits=2),
-                                            avg_med_diff = round(mean(DiffMedianHourlyPercent), digits=2)))) %>%
-      # Cat to console
-      print()
-    
-    # Return plot
-    return(p)
-    
-  })
-
 # By county & division
 ## Not a lot of difference over these variables.
 byCounty <- gpg_core %>%
@@ -257,82 +195,152 @@ svymean(~DiffMeanHourlyPercent, swordesign)
 
 # Calculate bias part and variance part
 
-# 4. Stratification can potentially yield a more efficient sample. The dataset provides two variables that can be used for stratification: 1. The size of the company (measured in no. of employees), and the type of industry (“SicDivision”). Note that there are many division codes, you may decide to recode this variable into fewer categories. Describe if, why and how you recode this variable if need be. Both can be thought of as potential variables to stratify on. We can oversample from particular large or small companies, and do the same for industry type (SicDivision).
+# 4. Stratification can potentially yield a more efficient sample. The dataset provides two variables that can be used for stratification: 
+#     1. The size of the company (measured in no. of employees), and 
+#     2. the type of industry (“SicDivision”). Note that there are many division codes, you may decide to recode this variable into fewer categories. Describe if, why and how you recode this variable if need be. Both can be thought of as potential variables to stratify on. We can oversample from particular large or small companies, and do the same for industry type (SicDivision).
 
 # Create upper and lower bound for the median difference to filter
 #repMean <- mean(gpg_core$DiffMedianHourlyPercent)
 #lower_bound <- repMean - 2*sd(gpg_core$DiffMedianHourlyPercent)
 #upper_bound <- repMean + 2*sd(gpg_core$DiffMedianHourlyPercent)
 
-ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
+library(gridExtra)
+# Plot the mean and median hourly difference
+p1 <- ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
        #           DiffMedianHourlyPercent <= upper_bound) 
        ,aes(x=EmployerSize , 
-            y=DiffMeanHourlyPercent, 
+            y=DiffMedianHourlyPercent, 
             group=EmployerSize)) +
   geom_violin() +
   geom_boxplot(width = 0.1) +
   coord_flip() +
-  scale_y_continuous(breaks = seq(-1,1,0.2)) + 
+  #scale_y_continuous(breaks = seq(-1,1,0.2)) + 
   geom_hline(yintercept=0, color = "red")
+p2 <- ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
+             #           DiffMedianHourlyPercent <= upper_bound) 
+             ,aes(x=EmployerSize , 
+                  y=DiffMeanHourlyPercent, 
+                  group=EmployerSize)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1) +
+  coord_flip() +
+  #scale_y_continuous(breaks = seq(-1,1,0.2)) + 
+  geom_hline(yintercept=0, color = "red")
+
+grid.arrange(p1, p2)
+## We see: high variance within strata --> not a lot of difference between strata. This is a problem if we want to stratify the data.
+
+## We can test this using an ANOVA difference of means
+a <- aov(DiffMeanHourlyPercent ~ EmployerSize, gpg_core)
+# Post-hoc tests
+TukeyHSD(a, conf.level=0.95) # --> no difference between the groups
+
+## SIC divisions
+
+# Look at percentages male/female by SIC division
+perc_by_division <- gpg_core %>%
+  # Select male/female/division columns
+  select(male, female, division) %>%
+  # Take columns and reshape to two columns (variable names and values), disregard division, which should stay in its own column
+  gather(variable, value, -division) %>%
+  # Group by division and gender (variable)
+  group_by(division, variable) %>%
+  # Per division and gender group, calculate the average percentage of males/females
+  summarize(avgperc = mean(value)) %>%
+  # Ungroup the data
+  ungroup()
+
+# Create an order (this is useful for the plot below). We are going to order the SIC divisions by the % of males
+perc_by_division %>%
+  # Filter for males
+  filter(variable == "male") %>%
+  # Order s.t. highest --> lowest
+  arrange(desc(avgperc)) %>%
+  # Add an ordering per SIC division
+  mutate(order = 1:n()) %>%
+  # Remove the variable and percentage columns
+  select(-avgperc, -variable) %>%
+  # Merge the data with the perc_by_division dataset, which now has a new column 'order' to specify the order of the divisions
+  left_join(perc_by_division) %>%
+  # Plot the data. Reorder the x-values (SIC division) by the order we just calculated.
+  (function(data) {
+    
+    ## Plot
+    p <- ggplot(data, aes(x=reorder(division,order) , y=avgperc, fill=variable)) +
+      # Bar plot --> statistic to show is just the number
+      geom_bar(stat = "identity") +
+      # Modidify the x-axis s.t. we abbreviate the industry texts (some are very long)
+      scale_x_discrete(label = function(x) abbreviate(x, minlength=20)) +
+      # Set the x-axis labels at an angle and adjust the height
+      theme(axis.text.x = element_text(angle = 45, hjust=1))
+    
+    ## Also print a table with SIC divisions, order, percentage of males, number of companies in that division & percentage
+    knitr::kable(data %>% 
+                   filter(variable == "male") %>% 
+                   select(division, order, avgperc) %>%
+                   mutate(perc_male = round(avgperc, digits = 2)) %>% 
+                   select(-avgperc) %>%
+                   # Join this data with a quick calculation of the number of companies / division
+                   left_join(., gpg_core %>% 
+                               group_by(division) %>% 
+                               summarize(number_companies = n())) %>%
+                   # Add percentages
+                   mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2)) %>%
+                   # Add mean/median difference in income
+                   left_join(., gpg_core %>%
+                               group_by(division) %>%
+                               summarize(avg_mean_diff = round(mean(DiffMeanHourlyPercent), digits=2),
+                                         avg_med_diff = round(mean(DiffMedianHourlyPercent), digits=2)))) %>%
+      # Cat to console
+      print()
+    
+    # Return plot
+    return(p)
+    
+  })
+
+## EXPLAIN WHY WE WILL REMOVE THE TWO SECTIONS WITH ONLY THREE VARIABLES
 
 ## Look at variance within and between groups 
 
-
-# Difference of means?
-mod1 <- lm(DiffMeanHourlyPercent ~ EmployerSize, gpg_core)
-a <- aov(DiffMeanHourlyPercent ~ EmployerSize, gpg_core)
-TukeyHSD(a, conf.level=0.95)
-
+# Abbreviate division names
 gpg_core$div_shortened <- abbreviate(gpg_core$division)
+# Run ANOVA
+a <- aov(DiffMedianHourlyPercent ~ div_shortened, gpg_core)
+# Run post-hoc tests
+TukeyHSD(a, conf.level=0.95) # --> there are differences between groups
 
-mod2 <- lm(DiffMeanHourlyPercent ~ div_shortened, gpg_core)
-a <- aov(DiffMeanHourlyPercent ~ div_shortened, gpg_core)
-TukeyHSD(a, conf.level=0.95)
+# Based on the above analysis, we would conclude the following:
+#  (1) the EmployerSize variable is not a useful stratification variable for several reasons.
+#     - The variance between groups is not big enough. The variance within groups is large.
+#     - this variable is not available on the sampling frame but a question in the questionnaire. 
+#  (2) SIC division looks more promising. We always have this variable on the sampling frame and there seems to be enough variability between groups
 
-# Stratified sample for 'employersize'
-sample_stratum <- stratify(gpg_core, "EmployerSize", n=1000, seed=400)
-  
-# Surveydesign for stratified sample
-stratdesign <- svydesign(ids=sample_stratum$uuid, 
-                         fpc=~fpc, 
-                         strata = ~Stratum, 
-                         #weights = ~Prob,
-                         data = sample_stratum)
-svymean(~sample_stratum$DiffMeanHourlyPercent, design=stratdesign, deff=TRUE)
+# Based on these observations, we would choose to stratify based on company division. 
 
-# Optimal sample design
-sample_optim <- stratify(gpg_core, 
-                         "EmployerSize", 
-                         n=1000, 
-                         seed=400,
-                         optim=TRUE, 
-                         optimVar = "DiffMeanHourlyPercent")
+# Answer the following question:
+#
+# Make a motivated choice for whether you want to stratify, how you made decision for how to stratify, and how you want to stratify. 
 
-# Surveydesign for stratified sample
-sample_optim$Prob <- 1 / sample_optim$Prob
-stratdesign <- svydesign(ids=sample_optim$uuid, 
-                         fpc=~fpc, 
-                         strata = ~Stratum,
-                         weights = ~Prob,
-                         data = sample_optim)
+# 6. (related to Q5.) If you would be limited to sample at most 1000 companies, what would your conclusion be about the size of the gender pay gap? What is your precision? How much more precise is your answer as compared to your answers under questions 1. And 2.? 
 
-# Get design effect
-svymean(~sample_optim$DiffMeanHourlyPercent, design=stratdesign, deff=TRUE)
+## We stratify using 'division' as stratification variable
 
-# Stratified sample for 'division'
+# proportional-to-size stratified sample for 'division'
 sample_stratum <- stratify(gpg_core, "division", n=1000, seed=400)
 
 # Surveydesign for stratified sample
-stratdesign <- svydesign(ids=sample_stratum$uuid, 
-                         fpc=~fpc, 
-                         strata = ~Stratum, 
-                         #weights = ~Prob,
-                         data = sample_stratum)
-svymean(~sample_stratum$DiffMeanHourlyPercent, design=stratdesign, deff=TRUE)
+stratdesign_prop <- svydesign(ids=sample_stratum$uuid, 
+                              fpc=~fpc, 
+                              strata = ~Stratum,
+                              data = sample_stratum)
 
-# Optimal sample design
+# Calculate the population value & design effect
+svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)
+
+# Use neyman allocation to stratify optimally
 sample_optim <- stratify(gpg_core, 
-                         "EmployerSize", 
+                         "division", 
                          n=1000, 
                          seed=400,
                          optim=TRUE, 
@@ -340,11 +348,15 @@ sample_optim <- stratify(gpg_core,
 
 # Surveydesign for stratified sample
 sample_optim$Prob <- 1 / sample_optim$Prob
-stratdesign <- svydesign(ids=sample_optim$uuid, 
+stratdesign_optim <- svydesign(ids=sample_optim$uuid, 
                          fpc=~fpc, 
                          strata = ~Stratum,
                          weights = ~Prob,
                          data = sample_optim)
 
 # Get design effect
-svymean(~sample_optim$DiffMeanHourlyPercent, design=stratdesign, deff=TRUE)
+svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)
+
+## What are our conclusions about the size of the gender gap based on this sample?
+## What is our precision?
+## Precision compared to stratified sample with proportion-to-size sampling & SRS?
