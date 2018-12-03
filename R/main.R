@@ -158,7 +158,7 @@ upper_bound <- repMean + 2*sd(gpg_core$DiffMedianHourlyPercent)
 ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
                 #           DiffMedianHourlyPercent <= upper_bound) 
        ,aes(x=EmployerSize , 
-            y=DiffMedianHourlyPercent, 
+            y=DiffMeanHourlyPercent, 
             group=EmployerSize)) +
   geom_violin() +
   geom_boxplot(width = 0.1) +
@@ -222,7 +222,8 @@ gpg_core %>%
   mutate(gender = ifelse(str_detect(variable, "Female"), "female", "male"),
          quantile = map_chr(variable, function(x) str_replace_all(tolower(x), "[fe]{0,2}male", "")) %>%
                               as_factor() %>%
-                              fct_relevel( c("lowerquartile", "lowermiddlequartile", "uppermiddlequartile", "topquartile"))) %>%
+                              fct_relevel( c("lowerquartile", "lowermiddlequartile", 
+                                             "uppermiddlequartile", "topquartile"))) %>%
   ggplot(., aes(x=quantile, y=avg, color = gender)) +
     geom_line(aes(group = gender)) +
     geom_point() +
@@ -235,12 +236,16 @@ gpg_core %>%
 library(survey)
 library(sampling)
 
+gpg_core <- gpg_core %>%
+  dplyr::select(uuid, EmployerSize, DiffMeanHourlyPercent, DiffMedianHourlyPercent,
+         division)
+
 # Total number of observations
 N <- nrow(gpg_core)
 n <- 1000
 
 # Take SRS 
-set.seed(600)
+set.seed(400)
 samp <- srswor(n, N)
 
 # Subset data
@@ -249,10 +254,45 @@ sample <- gpg_core %>%
   mutate(fpc = N)
 
 # Surveydesign with equal probabilities
-swordesign <- svydesign(id=~0,fpc=~fpc, data = sample)
+swordesign <- svydesign(ids=sample$uuid, fpc=~fpc, data = sample)
 
 # Size of gender pay gap for mean and median pay
-svymean(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign)
-svyquantile(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign, c(.25,.50,.75),ci=TRUE)
+svymean(~DiffMeanHourlyPercent, swordesign)
+#working with this simple random sample of 1000 companies, we find that the gender pay gap (in %) stands at 12.56% and 14.88% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2% and 14.1%. 
 
 # Calculate bias part and variance part
+
+source("R/utilities/functions.R")
+
+# Stratified sample for 'employersize'
+sample_stratum <- stratify(gpg_core, "EmployerSize", n=1000, seed=400)
+  
+# Surveydesign for stratified sample
+stratdesign <- svydesign(ids=sample_stratum$uuid, 
+                         fpc=~fpc, 
+                         strata = ~Stratum, 
+                         #weights = ~Prob,
+                         data = sample_stratum)
+svymean(~sample_stratum$DiffMeanHourlyPercent, design=stratdesign, deff=TRUE)
+
+# Optimal sample design
+sample_optim <- stratify(gpg_core, 
+                         "EmployerSize", 
+                         n=1000, 
+                         seed=400,
+                         optim=TRUE, 
+                         optimVar = "DiffMeanHourlyPercent")
+
+# Surveydesign for stratified sample
+sample_optim$Prob <- 1 / sample_optim$Prob
+stratdesign <- svydesign(ids=sample_optim$uuid, 
+                         fpc=~fpc, 
+                         strata = ~Stratum,
+                         weights = ~Prob,
+                         data = sample_optim)
+
+# Get design effect
+svymean(~sample_optim$DiffMeanHourlyPercent, design=stratdesign, deff=TRUE)
+
+# Stratified sample for 'division'
+

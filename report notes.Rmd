@@ -11,7 +11,7 @@ Our analysis found that, across the population, the average monthly wage for men
 
 b. Apart from regular (often monthly) payments there are also bonus payments. Include bonus payments as well now.
 
-The gender pay gap in the UK is also evident in the distribution of bonus payments; defined as any payment additional to an employee's salary. The pay gap for bonus payments stands at 14.1% at the UK population level, again in favour of men. 
+The gender pay gap in the UK is also evident in the distribution of bonus payments; defined as any payment additional to an employee's salary. The gender gap for bonus payments stands at 14.1% at the UK population level, again in favour of men. 
 
 2.	Apart from means, statistics are also included on quartiles of the income distributions, as well as the median. Again, study the payment gap at the population level. Is your conclusion in question 2 different from 1?
 
@@ -40,3 +40,11 @@ a.	Describe what you would if the goal was not to study the gender pay gap at co
 
 b.	Use the strategy you describe under a. to finally say something about the size of the gender pay gap.
 
+## TODO:
+
+- Stratification:
+  * Compare the two variables
+  * Recode the SIC variables
+  * Horvitz-thompson (Neymann) optimal allocation
+  * How to oversample from specific strata to reduce overall variance
+  (See code Peter week 5 on stratification)
