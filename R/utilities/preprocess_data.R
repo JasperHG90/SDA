@@ -188,6 +188,8 @@ if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
     # Drop capital-case columns
     select(-SECTION, -DIVISION, -CLASS)
   
+  # Remake SIC divisions
+  
   # Write data
   saveRDS(gpg_core, "data/gpg_core.rds")
   saveRDS(gpg_meta, "data/gpg_meta.rds")
