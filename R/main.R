@@ -177,9 +177,13 @@ payments <- gpg_core %>%
 neg_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent < 0), ]
 nrow(neg_gap)
 ##the gender gap (in the mean hourly rate) favouring women is prevalent in 749, or 11.15%, of the companies listed in the dataset
-pos_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent >= 0), ]
+pos_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent > 0), ]
 nrow(pos_gap)
-##in the remaining 5964 companies, or 88.85%, the mean wage is equal or is higher for male employees
+##in 5910 companies, or 88.03%, the mean wage is higher for male employees
+no_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent == 0), ]
+nrow(no_gap)
+#in the remaining 54 companies, or 0.008% there exists no gender wage gap
+
 
 hist(gpg_core$DiffMeanHourlyPercent, main = "Gender gap in mean hourly pay (%)", xlim = c(-1, 1), xlab = "Size of pay gap")
 ##the histogram clearly shows that the distribution of the gender pay gap is heavily skewed in favour of males. 
@@ -203,9 +207,12 @@ medPayments <- gpg_core %>%
 neg_gap <- gpg_core[which(gpg_core$DiffMedianHourlyPercent < 0), ]
 nrow(neg_gap)
 ##the gender gap (in the median hourly rate) favouring women is prevalent in 903, or 13.45%, of the companies listed in the dataset
-pos_gap <- gpg_core[which(gpg_core$DiffMedianHourlyPercent >= 0), ]
+pos_gap <- gpg_core[which(gpg_core$DiffMedianHourlyPercent > 0), ]
 nrow(pos_gap)
-##in the remaining 5810 companies, or 86.55%, the median wage is equal or is higher for male employees
+##in 5258 companies, or 78.32%, the median wage is higher for male employees
+no_gap <- gpg_core[which(gpg_core$DiffMedianHourlyPercent == 0), ]
+nrow(no_gap)
+#in the remaining 552 companies, or 8.22%, there is no disparity in the median hourly wage between males and females 
 
 hist(gpg_core$DiffMedianHourlyPercent, main = "Gender gap in median hourly pay (%)", xlim = c(-1, 1), xlab = "Size of pay gap")
 ##this shows that the distribution of the percentage gender gap in the median payments is also heavily skewed in favour of males 
