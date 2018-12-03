@@ -16,6 +16,9 @@ source("R/utilities/install_dependencies.R")
 # This script loads and preprocesses the data
 source("R/utilities/preprocess_data.R")
 
+# This script load pre-processing functions
+source("R/utilities/functions.R")
+
 # Making sense of the forward-operating pipe ('%>%'): ----
 
 library(dplyr)
@@ -150,21 +153,7 @@ byCounty <- gpg_core %>%
             avg_med_perc = mean(DiffMedianHourlyPercent)) %>%
   arrange(county,desc(n))
 
-# Create upper and lower bound for the median difference to filter
-repMean <- mean(gpg_core$DiffMedianHourlyPercent)
-lower_bound <- repMean - 2*sd(gpg_core$DiffMedianHourlyPercent)
-upper_bound <- repMean + 2*sd(gpg_core$DiffMedianHourlyPercent)
-
-ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
-                #           DiffMedianHourlyPercent <= upper_bound) 
-       ,aes(x=EmployerSize , 
-            y=DiffMeanHourlyPercent, 
-            group=EmployerSize)) +
-  geom_violin() +
-  geom_boxplot(width = 0.1) +
-  coord_flip() +
-  scale_y_continuous(breaks = seq(-1,1,0.2)) + 
-  geom_hline(yintercept=0, color = "red")
+# Answers to questions -----
 
 ## 1. For the population level data, there are several measures of pay inequality reported. First, inspect at the population level, whether there is a difference in the mean employment and payments made to males and females across the UK.
 
@@ -183,7 +172,6 @@ nrow(pos_gap)
 no_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent == 0), ]
 nrow(no_gap)
 #in the remaining 54 companies, or 0.008% there exists no gender wage gap
-
 
 hist(gpg_core$DiffMeanHourlyPercent, main = "Gender gap in mean hourly pay (%)", xlim = c(-1, 1), xlab = "Size of pay gap")
 ##the histogram clearly shows that the distribution of the gender pay gap is heavily skewed in favour of males. 
@@ -269,7 +257,37 @@ svymean(~DiffMeanHourlyPercent, swordesign)
 
 # Calculate bias part and variance part
 
-source("R/utilities/functions.R")
+# 4. Stratification can potentially yield a more efficient sample. The dataset provides two variables that can be used for stratification: 1. The size of the company (measured in no. of employees), and the type of industry (“SicDivision”). Note that there are many division codes, you may decide to recode this variable into fewer categories. Describe if, why and how you recode this variable if need be. Both can be thought of as potential variables to stratify on. We can oversample from particular large or small companies, and do the same for industry type (SicDivision).
+
+# Create upper and lower bound for the median difference to filter
+#repMean <- mean(gpg_core$DiffMedianHourlyPercent)
+#lower_bound <- repMean - 2*sd(gpg_core$DiffMedianHourlyPercent)
+#upper_bound <- repMean + 2*sd(gpg_core$DiffMedianHourlyPercent)
+
+ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
+       #           DiffMedianHourlyPercent <= upper_bound) 
+       ,aes(x=EmployerSize , 
+            y=DiffMeanHourlyPercent, 
+            group=EmployerSize)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(-1,1,0.2)) + 
+  geom_hline(yintercept=0, color = "red")
+
+## Look at variance within and between groups 
+
+
+# Difference of means?
+mod1 <- lm(DiffMeanHourlyPercent ~ EmployerSize, gpg_core)
+a <- aov(DiffMeanHourlyPercent ~ EmployerSize, gpg_core)
+TukeyHSD(a, conf.level=0.95)
+
+gpg_core$div_shortened <- abbreviate(gpg_core$division)
+
+mod2 <- lm(DiffMeanHourlyPercent ~ div_shortened, gpg_core)
+a <- aov(DiffMeanHourlyPercent ~ div_shortened, gpg_core)
+TukeyHSD(a, conf.level=0.95)
 
 # Stratified sample for 'employersize'
 sample_stratum <- stratify(gpg_core, "EmployerSize", n=1000, seed=400)
@@ -302,4 +320,31 @@ stratdesign <- svydesign(ids=sample_optim$uuid,
 svymean(~sample_optim$DiffMeanHourlyPercent, design=stratdesign, deff=TRUE)
 
 # Stratified sample for 'division'
+sample_stratum <- stratify(gpg_core, "division", n=1000, seed=400)
 
+# Surveydesign for stratified sample
+stratdesign <- svydesign(ids=sample_stratum$uuid, 
+                         fpc=~fpc, 
+                         strata = ~Stratum, 
+                         #weights = ~Prob,
+                         data = sample_stratum)
+svymean(~sample_stratum$DiffMeanHourlyPercent, design=stratdesign, deff=TRUE)
+
+# Optimal sample design
+sample_optim <- stratify(gpg_core, 
+                         "EmployerSize", 
+                         n=1000, 
+                         seed=400,
+                         optim=TRUE, 
+                         optimVar = "DiffMeanHourlyPercent")
+
+# Surveydesign for stratified sample
+sample_optim$Prob <- 1 / sample_optim$Prob
+stratdesign <- svydesign(ids=sample_optim$uuid, 
+                         fpc=~fpc, 
+                         strata = ~Stratum,
+                         weights = ~Prob,
+                         data = sample_optim)
+
+# Get design effect
+svymean(~sample_optim$DiffMeanHourlyPercent, design=stratdesign, deff=TRUE)
