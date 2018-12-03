@@ -300,8 +300,6 @@ perc_by_division %>%
     
   })
 
-## EXPLAIN WHY WE WILL REMOVE THE TWO SECTIONS WITH ONLY THREE VARIABLES
-
 ## Look at variance within and between groups 
 
 # Abbreviate division names
