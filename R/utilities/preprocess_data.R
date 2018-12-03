@@ -188,7 +188,10 @@ if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
     # Drop capital-case columns
     select(-SECTION, -DIVISION, -CLASS)
   
-  # Remake SIC divisions
+  # Remove SIC divisions 
+  gpg_core <- gpg_core %>% 
+    filter(!division %in% c("ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES",
+                            "ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS"))
   
   # Write data
   saveRDS(gpg_core, "data/gpg_core.rds")
