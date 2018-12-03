@@ -251,9 +251,14 @@ svyquantile(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign, c(.25,
 # Summary for each division
 summary(as.factor(gpg_core$division))
 
-# Only these two divisions are too small to be sampled:
-# ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES   3
-# ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS                     3
+# These two divisions are too small to be sampled:
+# -ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES   3
+# -ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS                     3
+
+# We exclude these two divisions for the following reasons:
+# 1. There are only included 6 data points, which are difficult to sampling.
+# 2. They contain less than 0.09% of population.
+# 3. The divisions themself have special characteristics. Therefore, it is not possible to combine with other divisions. 
 
 
 
