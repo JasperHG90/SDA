@@ -16,6 +16,9 @@ source("R/utilities/install_dependencies.R")
 # This script loads and preprocesses the data
 source("R/utilities/preprocess_data.R")
 
+# This script load pre-processing functions
+source("R/utilities/functions.R")
+
 # Making sense of the forward-operating pipe ('%>%'): ----
 
 library(dplyr)
@@ -78,6 +81,164 @@ gpg_core %>%
 ## Graph is bimodal
 ##  - Women peak at +-22% and 50%, men peak at 50% and +-78%
 
+# By county & division
+## Not a lot of difference over these variables.
+byCounty <- gpg_core %>%
+  select(county, division, female, male, DiffMeanHourlyPercent, DiffMedianHourlyPercent) %>%
+  group_by(county, division) %>%
+  summarize(n = n(),
+            avgmale = mean(male),
+            avgfem = mean(female),
+            avg_mean_perc = mean(DiffMeanHourlyPercent),
+            avg_med_perc = mean(DiffMedianHourlyPercent)) %>%
+  arrange(county,desc(n))
+
+# Answers to questions -----
+
+## 1. For the population level data, there are several measures of pay inequality reported. First, inspect at the population level, whether there is a difference in the mean employment and payments made to males and females across the UK.
+
+payments <- gpg_core %>%
+  summarize(avg = mean(DiffMeanHourlyPercent)) %>%
+  print()
+## The average mean percentage difference between pay for men and women is 14.4%
+
+## it is (I think) useful to look at the prevalence of the gender gap in favour of men, i.e. to see in how many companies do men earn a higher average wage
+neg_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent < 0), ]
+nrow(neg_gap)
+##the gender gap (in the mean hourly rate) favouring women is prevalent in 749, or 11.15%, of the companies listed in the dataset
+pos_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent > 0), ]
+nrow(pos_gap)
+##in 5910 companies, or 88.03%, the mean wage is higher for male employees
+no_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent == 0), ]
+nrow(no_gap)
+#in the remaining 54 companies, or 0.008% there exists no gender wage gap
+
+hist(gpg_core$DiffMeanHourlyPercent, main = "Gender gap in mean hourly pay (%)", xlim = c(-1, 1), xlab = "Size of pay gap")
+##the histogram clearly shows that the distribution of the gender pay gap is heavily skewed in favour of males. 
+
+## 1b. Apart from regular (often monthly) payments there are also bonus payments. Include bonus payments as well now.
+
+payments <- gpg_core %>%
+  summarize(avg = mean(DiffMeanHourlyPercent),
+            avgbonus = mean(DiffMeanBonusPercent)) %>%
+  print()
+## The average mean bonus percentage difference is 14.1% in favor of men
+
+# 3. Apart from means, statistics are also included on quartiles of the income distributions, as well as the median. Again, study the payment gap at the population level. Is your conclusion in question 2 different from 1?
+
+medPayments <- gpg_core %>%
+  summarize(avg = mean(DiffMedianHourlyPercent)) %>%
+  print()
+## Median bonus percentage difference is 12.2% in favor of men
+
+#again just looking at the number of companies in which the median pay favours males, etc.
+neg_gap <- gpg_core[which(gpg_core$DiffMedianHourlyPercent < 0), ]
+nrow(neg_gap)
+##the gender gap (in the median hourly rate) favouring women is prevalent in 903, or 13.45%, of the companies listed in the dataset
+pos_gap <- gpg_core[which(gpg_core$DiffMedianHourlyPercent > 0), ]
+nrow(pos_gap)
+##in 5258 companies, or 78.32%, the median wage is higher for male employees
+no_gap <- gpg_core[which(gpg_core$DiffMedianHourlyPercent == 0), ]
+nrow(no_gap)
+#in the remaining 552 companies, or 8.22%, there is no disparity in the median hourly wage between males and females 
+
+hist(gpg_core$DiffMedianHourlyPercent, main = "Gender gap in median hourly pay (%)", xlim = c(-1, 1), xlab = "Size of pay gap")
+##this shows that the distribution of the percentage gender gap in the median payments is also heavily skewed in favour of males 
+
+library(stringr)
+library(purrr)
+library(forcats)
+
+gpg_core %>%
+  select(18:25) %>%
+  gather(variable, value) %>%
+  group_by(variable) %>%
+  summarize(avg = mean(value)) %>%
+  mutate(gender = ifelse(str_detect(variable, "Female"), "female", "male"),
+         quantile = map_chr(variable, function(x) str_replace_all(tolower(x), "[fe]{0,2}male", "")) %>%
+                              as_factor() %>%
+                              fct_relevel( c("lowerquartile", "lowermiddlequartile", 
+                                             "uppermiddlequartile", "topquartile"))) %>%
+  ggplot(., aes(x=quantile, y=avg, color = gender)) +
+    geom_line(aes(group = gender)) +
+    geom_point() +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust=1))
+## Q. this data gives us nothing about the payment gap PER level, right? We cannot see if, say, the payment gap is bigger at the top than at the bottom since we don't have these data. All we can say is that the income distributions are skewed in favor of men, which is likely one reason that the payment gap exists in the first place. 
+
+# 3. Imagine that instead of using the population, we want to sample. What would your conclusions be for the size of the gender payment gap if you would randomly sample 1000 cases at most from this dataset?
+
+library(survey)
+library(sampling)
+
+gpg_core <- gpg_core %>%
+  dplyr::select(uuid, EmployerSize, DiffMeanHourlyPercent, DiffMedianHourlyPercent,
+         division)
+
+# Total number of observations
+N <- nrow(gpg_core)
+n <- 1000
+
+# Take SRS 
+set.seed(400)
+samp <- srswor(n, N)
+
+# Subset data
+sample <- gpg_core %>%
+  filter(as.logical(samp)) %>%
+  mutate(fpc = N)
+
+# Surveydesign with equal probabilities
+swordesign <- svydesign(ids=sample$uuid, fpc=~fpc, data = sample)
+
+# Size of gender pay gap for mean and median pay
+svymean(~DiffMeanHourlyPercent, swordesign)
+#working with this simple random sample of 1000 companies, we find that the gender pay gap (in %) stands at 12.56% and 14.88% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2% and 14.1%. 
+
+# Calculate bias part and variance part
+
+# 4. Stratification can potentially yield a more efficient sample. The dataset provides two variables that can be used for stratification: 
+#     1. The size of the company (measured in no. of employees), and 
+#     2. the type of industry (“SicDivision”). Note that there are many division codes, you may decide to recode this variable into fewer categories. Describe if, why and how you recode this variable if need be. Both can be thought of as potential variables to stratify on. We can oversample from particular large or small companies, and do the same for industry type (SicDivision).
+
+# Create upper and lower bound for the median difference to filter
+#repMean <- mean(gpg_core$DiffMedianHourlyPercent)
+#lower_bound <- repMean - 2*sd(gpg_core$DiffMedianHourlyPercent)
+#upper_bound <- repMean + 2*sd(gpg_core$DiffMedianHourlyPercent)
+
+library(gridExtra)
+# Plot the mean and median hourly difference
+p1 <- ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
+       #           DiffMedianHourlyPercent <= upper_bound) 
+       ,aes(x=EmployerSize , 
+            y=DiffMedianHourlyPercent, 
+            group=EmployerSize)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1) +
+  coord_flip() +
+  #scale_y_continuous(breaks = seq(-1,1,0.2)) + 
+  geom_hline(yintercept=0, color = "red")
+p2 <- ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
+             #           DiffMedianHourlyPercent <= upper_bound) 
+             ,aes(x=EmployerSize , 
+                  y=DiffMeanHourlyPercent, 
+                  group=EmployerSize)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1) +
+  coord_flip() +
+  #scale_y_continuous(breaks = seq(-1,1,0.2)) + 
+  geom_hline(yintercept=0, color = "red")
+
+grid.arrange(p1, p2)
+## We see: high variance within strata --> not a lot of difference between strata. This is a problem if we want to stratify the data.
+
+## We can test this using an ANOVA difference of means
+a <- aov(DiffMeanHourlyPercent ~ EmployerSize, gpg_core)
+# Post-hoc tests
+TukeyHSD(a, conf.level=0.95) # --> no difference between the groups
+
+## SIC divisions
+
 # Look at percentages male/female by SIC division
 gpg_core %>%
   # Select male/female/division columns
@@ -138,9 +299,9 @@ gpg_core %>%
                    mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2)) %>%
                    # Add mean/median difference in income
                    left_join(., gpg_core %>%
-                                  group_by(division) %>%
-                                  summarize(avg_mean_diff = round(mean(DiffMeanHourlyPercent), digits=2),
-                                            avg_med_diff = round(mean(DiffMedianHourlyPercent), digits=2)))) %>%
+                               group_by(division) %>%
+                               summarize(avg_mean_diff = round(mean(DiffMeanHourlyPercent), digits=2),
+                                         avg_med_diff = round(mean(DiffMedianHourlyPercent), digits=2)))) %>%
       # Cat to console
       print()
     
@@ -149,82 +310,82 @@ gpg_core %>%
     
   })
 
-# By county & division
-## Not a lot of difference over these variables.
-byCounty <- gpg_core %>%
-  select(county, division, female, male, DiffMeanHourlyPercent, DiffMedianHourlyPercent) %>%
-  group_by(county, division) %>%
-  summarize(n = n(),
-            avgmale = mean(male),
-            avgfem = mean(female),
-            avg_mean_perc = mean(DiffMeanHourlyPercent),
-            avg_med_perc = mean(DiffMedianHourlyPercent)) %>%
-  arrange(county,desc(n))
+## Look at variance within and between groups 
 
-## 1. For the population level data, there are several measures of pay inequality reported. First, inspect at the population level, whether there is a difference in the mean employment and payments made to males and females across the UK.
+# Abbreviate division names
+gpg_core$div_shortened <- abbreviate(gpg_core$division)
+# Run ANOVA
+a <- aov(DiffMedianHourlyPercent ~ div_shortened, gpg_core)
+# Run post-hoc tests
+TukeyHSD(a, conf.level=0.95) # --> there are differences between groups
 
-payments <- gpg_core %>%
-  summarize(avg = mean(DiffMeanHourlyPercent)) %>%
-  print()
-## The average mean percentage difference between pay for men and women is 14.4%
+# Answer the following question:
+#
+# Make a motivated choice for whether you want to stratify, how you made decision for how to stratify, and how you want to stratify. 
 
-## 1b. Apart from regular (often monthly) payments there are also bonus payments. Include bonus payments as well now.
+# Based on the above analysis, we would conclude the following:
+#  (1) the EmployerSize variable is not a useful stratification variable for several reasons.
+#     - The variance between groups is not big enough. The variance within groups is large.
+#     - this variable is not available on the sampling frame but a question in the questionnaire. 
+#  (2) SIC division looks more promising. We always have this variable on the sampling frame and there seems to be enough variability between groups
 
-payments <- gpg_core %>%
-  summarize(avg = mean(DiffMeanHourlyPercent),
-            avgbonus = mean(DiffMeanBonusPercent)) %>%
-  print()
-## The average mean bonus percentage difference is 14.1% in favor of men
+# Based on these observations, we would choose to stratify based on company division. 
 
-# 3. Apart from means, statistics are also included on quartiles of the income distributions, as well as the median. Again, study the payment gap at the population level. Is your conclusion in question 2 different from 1?
+# These two divisions are too small to be sampled:
+# -ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES   3
+# -ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS                     3
 
-medPayments <- gpg_core %>%
-  summarize(avg = mean(DiffMedianHourlyPercent)) %>%
-  print()
-## Median bonus percentage difference is 12.2% in favor of men
-library(stringr)
-library(purrr)
-library(forcats)
+# We exclude these two divisions for the following reasons:
+# 1. There are only included 6 data points, which are difficult to sampling.
+# 2. They contain less than 0.09% of population.
+# 3. The divisions themself have special characteristics. Therefore, it is not possible to combine with other divisions. 
 
-gpg_core %>%
-  select(18:25) %>%
-  gather(variable, value) %>%
-  group_by(variable) %>%
-  summarize(avg = mean(value)) %>%
-  mutate(gender = ifelse(str_detect(variable, "Female"), "female", "male"),
-         quantile = map_chr(variable, function(x) str_replace_all(tolower(x), "[fe]{0,2}male", "")) %>%
-                              as_factor() %>%
-                              fct_relevel( c("lowerquartile", "lowermiddlequartile", "uppermiddlequartile", "topquartile"))) %>%
-  ggplot(., aes(x=quantile, y=avg, color = gender)) +
-    geom_line(aes(group = gender)) +
-    geom_point() +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle = 45, hjust=1))
-## Q. this data gives us nothing about the payment gap PER level, right? We cannot see if, say, the payment gap is bigger at the top than at the bottom since we don't have these data. All we can say is that the income distributions are skewed in favor of men, which is likely one reason that the payment gap exists in the first place. 
+# 6. (related to Q5.) If you would be limited to sample at most 1000 companies, what would your conclusion be about the size of the gender pay gap? What is your precision? How much more precise is your answer as compared to your answers under questions 1. And 2.? 
 
-# 3. Imagine that instead of using the population, we want to sample. What would your conclusions be for the size of the gender payment gap if you would randomly sample 1000 cases at most from this dataset?
+## We stratify using 'division' as stratification variable
 
-library(survey)
-library(sampling)
+# proportional-to-size stratified sample for 'division'
+sample_stratum <- stratify(gpg_core, "division", n=1000, seed=400)
 
-# Total number of observations
-N <- nrow(gpg_core)
-n <- 1000
+# Surveydesign for stratified sample
+stratdesign_prop <- svydesign(ids=sample_stratum$uuid, 
+                              fpc=~fpc, 
+                              strata = ~Stratum,
+                              data = sample_stratum)
 
-# Take SRS 
-set.seed(600)
-samp <- srswor(n, N)
+# Calculate the population value & design effect
+svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)
 
-# Subset data
-sample <- gpg_core %>%
-  filter(as.logical(samp)) %>%
-  mutate(fpc = N)
+# Use neyman allocation to stratify optimally
+sample_optim <- stratify(gpg_core, 
+                         "division", 
+                         n=1000, 
+                         seed=400,
+                         optim=TRUE, 
+                         optimVar = "DiffMeanHourlyPercent")
 
-# Surveydesign with equal probabilities
-swordesign <- svydesign(id=~0,fpc=~fpc, data = sample)
+# Surveydesign for stratified sample
+sample_optim$Prob <- 1 / sample_optim$Prob
+stratdesign_optim <- svydesign(ids=sample_optim$uuid, 
+                         fpc=~fpc, 
+                         strata = ~Stratum,
+                         weights = ~Prob,
+                         data = sample_optim)
 
 # Size of gender pay gap for mean and median pay
 svymean(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign)
 svyquantile(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign, c(.25,.50,.75),ci=TRUE)
 
 ## We would conclude pretty much the same thing: mean around 14%, median around 12%
+
+# Get design effect
+svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)
+
+## What are our conclusions about the size of the gender gap based on this sample?
+#   - The results show that we are still getting good estimates for the mean difference in hourly pay. The mean values are closer to the actual population values.
+## What is our precision?
+#   - The SE of both stratified samples is smaller than the SRS. The design effect is 0.8771 for the proportional-to-size stratified sample and 0.8685 for the optimally allocated stratified sample.
+## Precision compared to stratified sample with proportion-to-size sampling & SRS?
+
+# Summary for each division
+summary(as.factor(gpg_core$division))

@@ -1,0 +1,12 @@
+---
+title: "Thoughts and notes"
+output: html_notebook
+---
+
+## Lumley notes
+
+- Law of large numbers: sample of 1.000 is likely representative of population (p.2)
+- Likely same numbers as population, but not necessarily so. Can do optimal allocation to make sure.
+
+
+
