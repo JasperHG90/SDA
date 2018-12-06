@@ -100,6 +100,8 @@ payments <- gpg_core %>%
   print()
 ## The average mean percentage difference between pay for men and women is 14.4%
 
+sqrt(var(gpg_core$DiffMeanHourlyPercent))
+
 ## it is (I think) useful to look at the prevalence of the gender gap in favour of men, i.e. to see in how many companies do men earn a higher average wage
 neg_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent < 0), ]
 nrow(neg_gap)
@@ -356,6 +358,8 @@ sample_optim <- stratify(gpg_core,
                          optim=TRUE, 
                          optimVar = "DiffMeanHourlyPercent")
 
+length(which(sample_optim$Stratum == 1))
+
 # Surveydesign for stratified sample
 sample_optim$Prob <- 1 / sample_optim$Prob
 stratdesign_optim <- svydesign(ids=sample_optim$uuid, 
@@ -375,3 +379,4 @@ svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)
 
 # Summary for each division
 summary(as.factor(gpg_core$division))
+
