@@ -193,6 +193,8 @@ swordesign <- svydesign(ids=sample$uuid, fpc=~fpc, data = sample)
 svymean(~DiffMeanHourlyPercent, swordesign)
 #working with this simple random sample of 1000 companies, we find that the gender pay gap (in %) stands at 12.56% and 14.88% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2% and 14.1%. 
 
+#the SE of 0.0041 for the SRS yields a margin of error (sampling error) of 1.96*0.0041 = 0.008036 = 0.8% 
+
 <<<<<<< HEAD
 # Calculate bias part and variance part
 

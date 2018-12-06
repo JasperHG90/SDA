@@ -8,8 +8,10 @@ output: html_notebook
 Introduction / background / summary: (VERY rough at the moment...)
 The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs?
 
-This report will focus on the wage gap in the UK in 2017. The data we analyse throughout the report comprise of all companies with over 250 employees, and a small amount of smaller companies. As of 2017, it is required by the UK government that all such companies provide data including....
-Our aim is to create an efficient sampling design, from which we can make accurate calculations by using a smaller sample. We will compare the precision of a number of different such designs. Their accuracy will be measured against the results obtained from the full data/population analysis. 
+This report will focus on the wage gap in the UK in 2017. The data we analyse throughout the report comprise of all companies with over 250 employees, and a small amount of smaller companies. As of 2017, it is required by the UK government that all such companies publish information relating to the pay of employees for the purpose of showing whether there is indeed a difference in the pay of male and female employees. This dataset is well protected against non-response errors, given that failure to comply with the regulations can lead to enforcement from the Equality and Human Rights Commission [1]. In addition, non-sampling errors are also well protected via the use of clear and simple categories, for example, size brackets for the number of employees. 
+Our aim is to create an efficient sampling design, from which we can make accurate calculations by using a smaller sample. We will compare the precision of a number of different such designs. Their accuracy will be measured against the results obtained from the complete data analysis. 
+
+One element of the data which we will refer to throughout this report is the Standard Industrial Classification (SIC). This is a widely used system for classifying companies into certain larger industries. 
 
 
 #1.	a. For the population level data, there are several measures of pay inequality reported. First, inspect at the population level, whether there is a difference in the mean employment and payments made to males and females across the UK. 
@@ -36,28 +38,26 @@ Using the data on the gender of employees working within each income quartile (h
 #we have also mentioned looking at the pay gap within each quartile - this would fit nicely in here 
 
 #3.	Imagine that instead of using the population, we want to sample. What would your conclusions be for the size of the gender payment gap if you would randomly sample 1000 cases at most from this dataset?
-The focus of this report largely falls on sampling methods, with the aim of making inferences on the target population using a (smaller) designed sample. The target population for our sampling is the UK working population; the goal of assessing the gender wage gap is to do so in the context of its widespread presence in the entire population. In the current situation, whereby companies with over 250 employees are required to provide relevant data, we can work with a dataset containing 6713 companies. The sample size in mind when conducting the following sample analyses will be 1000. Thus, we endeavour to make calculations on such a sample which accurately reflect the UK population. 
+The focus of this report largely falls on sampling methods, with the aim of making inferences on the target population using a (smaller) designed sample. The target population for our sampling is the UK working population; the goal of assessing the gender wage gap is to do so in the context of its widespread presence in the entire population. In the current situation, whereby companies with over 250 employees are required to provide relevant data, we can work with a dataset containing 6713 companies. The sample size in mind when conducting the following sample analyses will be 1000. Thus, we endeavour to make calculations related to the gender pay gap on such a sample which accurately reflect the UK population. 
 
 Firstly, we opted to generate a sample of 1000 random companies out of the 6713 available, with each company given an equal probability of being sampled (1000 / 6713 = 14.9%). This method is known as a simple random sample (SRS), and requires assuming that a random sample is representative of the target population. The sample is taken without replacement, i.e. no company can be included more than once in the sample. 
 #talk about the method of obtaining the sample: do we say 'we did such and such using such and such functions in R' or do we need to be more general / theoretical?
 Working with this SRS of 1000 companies, we found that the gender pay gap (in %) stands at 12.56% and 14.88% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2% and 14.1%. 95% confidence intervals for these percentages (.. , ..) show little variation from our original population values. 
-#I think we should put the SE for each design in a table, like we made on paper so that they're easy to refer to at any time + calculate design effects easily 
-# "Discuss potential non-sampling, sampling, and non-response errors" 
-
+The standard error for the estimate for the difference in mean hourly wage using the SRS is 0.0041. Using this sampling design, we achieve a margin of error of  0.0041*1.96 = 0.8% at the 5% level. This relates to the sampling error - the difference between the sampled statistic and the population statistic is just 0.8%. We will use this SRS as a reference to compare all future sampling designs against. This will be done via the design effect (Variance_design / Variance_SRS). 
 
 #4.	Stratification can potentially yield a more efficient sample. The dataset provides two variables that can be used for stratification: 1. The size of the company (measured in no. of employees), and the type of industry (“SicDivision”). Note that there are many division codes, you may decide to recode this variable into fewer categories. Describe if, why and how you recode this variable if need be. Both can be thought of as potential variables to stratify on. We can oversample from particular large or small companies, and do the same for industry type (SicDivision).
-
-When the statistic of interest (here, gender wage inequality) is known to correlate in some way with information provided in the sampling frame, it can be useful to stratify. Arranging the data into strata prior to sampling can optimise the sampling design in the sense that the standard error of the 'predictions' can be reduced, thus improving the precision. 
-
-Based on rudimentary analysis, and with the sample of 1000 still the goal, we can decide to stratify based on SIC division (we'll probably have defined the SIC division in the intro / background section). There is an obvious problem here in that some of the divisions only have very few observations, but we can re-arrange this somewhat to make better categories. (also, look at the difference between men/women pay in these groups; they are not really existent.) ... 
-
-#show the violin plot here to show that the gap differs among size groups (the reason to stratify here)
-Another variable on which to stratify is EmployerSize. The data are already provided in seven categories based on the number of employees. Therefore, by using these as the strata, we can improve both the precision of the estimates within each strata, and thus the overall precision. We could not sample an equal number (1000 / 7) of companies from each strata, owing to there not being a sufficient number of companies in each strata. Therefore, we sampled from each size division with equal probability.  (CHECK! THIS WAS CONFUSING). (We have roughly taken a proportion of 1000/6713 = 14.89% from each size division). In order to do this, it was first necessary to calculate the proportion of all companies falling in each size division. This proportion was then multiplied by 1000 for each strata to achieve the desired sample size. Given that we preferred our sample to be at most 1000 companies, we rounded the final stratum sizes down where necessary. 
-#report SE and confidence intervals, talk about the features (errors) of this particular design 
-
-Given that the premise of stratified samples is to increase the precision/ lower the SE, this sample has not performed its desired function. Therefore, it was necessary for us to implement an optimal allocation strategy, so that each size division is more apporopriately represented in the sample. It is of interest to take a larger sample from strata in which there is more variation. For this, we (attempted to use) used the Neyman Allocation. ... 
-
 #5.	Investigate the variation in the gender pay gap within and between both strata in the population dataset. Make a motivated choice for whether you want to stratify, how you made decision for how to stratify, and how you want to stratify. 
+
+When the statistic of interest (here, gender wage inequality) is known to correlate in some way with information provided in the sampling frame, it can be useful to stratify. Arranging the data into strata prior to sampling can optimise the sampling design in the sense that the standard error of the 'predictions' can be reduced, thus improving the precision. This will only be the case if we see small within-strata variance, and larger between-strata variance. This will make for a more efficient design for the reason that, if a large portion of the total variance is between the strata, only a small sample from each stratum will be necessary to make accurate predictions. 
+
+Based on rudimentary analysis of the two potential stratification variables SIC and EmployerSize, and with the sample of 1000 still the goal, we decided to stratify based on SIC division. Evidence supporting this decision is provided in Figure XX: violin plots of the strata. From these plots we can clearly rule out EmployerSize as a stratification variable given the great variation in wage difference within each employer size category.
+
+SIC division is identified as a more useful stratification variable. However, there is yet an obvious problem here in that two of the divisions have only three companies each: activities of extraterritorial organisations and bodies, and activities of households as employers. We excluded these two divisions for the following reasons:
+1. They comprise of just 6 companies, making it difficult to sample in a representative way.
+2. They contain less than 0.09% of population.
+3. The divisions themselves have unique, specific characteristics. Therefore, it is not possible to combine them with other divisions in a meaningful way.  
+
+We then used a proportional-to-size (PPS) procedure to draw a stratified sample of (at most) 1000 companies. This technique ensures that the drawn sample well represents the population, given that the proportions of the divisions within the sample match those within the population. For example, the division 'education' contains 986 companies, or 14.69% of the population. Within the PPS sample, education will comprise as close to this figure as possible. This sample tells us that there is a 14.24% difference in the average wage. The margin of error here is 0.74%, with a design effect of 0.8771, meaning a sample of only 877 would be required to achieve the same precision as our earlier SRS. 
 
 
 #6.	(related to Q5.) If you would be limited to sample at most 1000 companies, what would your conclusion be about the size of the gender pay gap? What is your precision? How much more precise is your answer as compared to your answers under questions 1. And 2.?
@@ -81,3 +81,19 @@ Given that the premise of stratified samples is to increase the precision/ lower
   * Horvitz-thompson (Neymann) optimal allocation
   * How to oversample from specific strata to reduce overall variance
   (See code Peter week 5 on stratification)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+throwaway work:
+#show the violin plot here to show that the gap differs among size groups (the reason to stratify here)
+Another variable on which to stratify is EmployerSize. The data are already provided in seven categories based on the number of employees. Therefore, by using these as the strata, we can improve both the precision of the estimates within each strata, and thus the overall precision. We could not sample an equal number (1000 / 7) of companies from each strata, owing to there not being a sufficient number of companies in each strata. Therefore, we sampled from each size division with equal probability.  (CHECK! THIS WAS CONFUSING). (We have roughly taken a proportion of 1000/6713 = 14.89% from each size division). In order to do this, it was first necessary to calculate the proportion of all companies falling in each size division. This proportion was then multiplied by 1000 for each strata to achieve the desired sample size. Given that we preferred our sample to be at most 1000 companies, we rounded the final stratum sizes down where necessary. 
+#report SE and confidence intervals, talk about the features (errors) of this particular design 
+
+Given that the premise of stratified samples is to increase the precision/ lower the SE, this sample has not performed its desired function. Therefore, it was necessary for us to implement an optimal allocation strategy, so that each size division is more apporopriately represented in the sample. It is of interest to take a larger sample from strata in which there is more variation. For this, we (attempted to use) used the Neyman Allocation. ... 
