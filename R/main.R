@@ -359,8 +359,9 @@ sample_optim$Prob <- 1 / sample_optim$Prob
 stratdesign_optim <- svydesign(ids=sample_optim$uuid, 
                          fpc=~fpc, 
                          strata = ~Stratum,
-                         weights = ~Prob,
+                         #weights = ~Prob,
                          data = sample_optim)
+
 
 # Size of gender pay gap for mean and median pay
 svymean(~DiffMedianHourlyPercent + DiffMeanHourlyPercent, swordesign)
