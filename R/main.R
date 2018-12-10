@@ -102,6 +102,8 @@ payments <- gpg_core %>%
   print()
 ## The average mean percentage difference between pay for men and women is 14.4%
 
+sqrt(var(gpg_core$DiffMeanHourlyPercent))
+
 ## it is (I think) useful to look at the prevalence of the gender gap in favour of men, i.e. to see in how many companies do men earn a higher average wage
 neg_gap <- gpg_core[which(gpg_core$DiffMeanHourlyPercent < 0), ]
 nrow(neg_gap)
@@ -195,6 +197,12 @@ swordesign <- svydesign(ids=sample$uuid, fpc=~fpc, data = sample)
 svymean(~DiffMeanHourlyPercent, swordesign)
 #working with this simple random sample of 1000 companies, we find that the gender pay gap (in %) stands at 12.56% and 14.88% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2% and 14.1%. 
 
+<<<<<<< HEAD
+=======
+#the SE of 0.0041 for the SRS yields a margin of error (sampling error) of 1.96*0.0041 = 0.008036 = 0.8% 
+
+<<<<<<< HEAD
+>>>>>>> c5ec85707e00e4f46b8fd8b53aee3e4f455b995b
 # Calculate bias part and variance part
 
 # 4. Stratification can potentially yield a more efficient sample. The dataset provides two variables that can be used for stratification: 
@@ -364,6 +372,8 @@ sample_optim <- stratify(gpg_core,
                          optim=TRUE, 
                          optimVar = "DiffMeanHourlyPercent")
 
+length(which(sample_optim$Stratum == 1))
+
 # Surveydesign for stratified sample
 sample_optim$Prob <- 1 / sample_optim$Prob
 stratdesign_optim <- svydesign(ids=sample_optim$uuid, 
@@ -389,3 +399,36 @@ svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)
 
 # Summary for each division
 summary(as.factor(gpg_core$division))
+
+
+# 7.How large should the sample be to achieve a CV of 0.01 for the size of the gender pay gap in the mean income?
+# proportional-to-size stratified sample for 'division'
+cv(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE))
+# CV = 0.0264
+
+# neyman allocation to stratify optimally
+## this approach will occur problem of "not enough members in group", so I use the division as stratification
+cv(svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE))
+# CV = 0.026
+
+# To decrease CV, we incerase n until CV < 0.01
+for (i in 1001:6707){
+  sample_stratum <- stratify(gpg_core, "division", n=i, seed=400)
+  
+  stratdesign_prop <- svydesign(ids=sample_stratum$uuid, 
+                                fpc=~fpc, 
+                                strata = ~Stratum,
+                                data = sample_stratum)
+  
+  if (cv(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE))<0.01) break
+}
+
+i  ## 3919 is the smallest n which make CV < 0.01
+
+# 8.weight the data according to the size of the company
+# We use the middle number of each group as weight. Except the largest one (20,000 or more) as 20,000 and smallest one as 0
+Weight <- c(0, 250/2, (250+499)/2, (500+999)/2, (1000+4999)/2, (5000+19999)/2, 20000)
+clustermean <- tapply(gpg_core$DiffMeanHourlyPercent,gpg_core$EmployerSize,mean)
+weighted.mean(clustermean,Weight)
+
+# From individual perspective, the pay gap is 0.16.
