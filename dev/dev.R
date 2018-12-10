@@ -1,4 +1,19 @@
 ## Dev code
+
+sic_clusters <- kmeans(gpg_core$DiffMedianHourlyPercent, centers = 7, nstart = 20)
+sic_clusters
+
+
+
+gpg_core$sic_clustered <- as.factor(sic_clusters$cluster)
+
+## Stratify
+table(gpg_core$sic_clustered)
+
+# proportional-to-size stratified sample for 'division'
+sample_stratum <- stratify(gpg_core, "sic_clustered", n=1000, seed=400)
+
+
 ## We can test this using an ANOVA difference of means
 a <- aov(DiffMedianHourlyPercent ~ abbreviate(division, 20), gpg_core)
 TukeyHSD(a, conf.level=0.95) 
