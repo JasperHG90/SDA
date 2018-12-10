@@ -241,13 +241,17 @@ stratdesign_optim <- svydesign(ids=sample_optim$uuid,
 
 
 comparedesign <- data.frame(
-  "Mean wage gap estimate" = c(svymean(~DiffMeanHourlyPercent, swordesign)[1], 
-                               svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)[1], 
-                               svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)[1]), 
-  "Standard Error" = c(SE(svymean(~DiffMeanHourlyPercent, swordesign))[1], 
-                       SE(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE))[1],
-                       SE(svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)[1])
-))         
+  "Mean wage gap estimate" = c(as.numeric(svymean(~DiffMeanHourlyPercent, swordesign)), 
+                               as.numeric(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)), 
+                               as.numeric(svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE))), 
+  "SE" = c(as.numeric(SE(svymean(~DiffMeanHourlyPercent, swordesign))), 
+                       as.numeric(SE(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE))),
+                       as.numeric(SE(svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)))),
+  "Margin of error" = c(as.numeric(SE(svymean(~DiffMeanHourlyPercent, swordesign)))*1.96, 
+                       as.numeric(SE(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)))*1.96,
+                       as.numeric(SE(svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)))*1.96)
+  #"Design Effect" = c(1, )
+)         
 row.names(comparedesign) <- c("SRS", "PPS", "Optimised")
 knitr::kable(comparedesign)
 ```
