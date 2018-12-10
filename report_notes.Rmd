@@ -88,7 +88,6 @@ A glance at the distribution of both positive and negative wage inequalities aga
 
 ```{r, fig.cap= "A histogram of the frequency of different sized median pay gaps"}
 hist(gpg_core$DiffMedianHourlyPercent, main = "Gender gap in median hourly pay (%)", xlim = c(-1, 1), xlab = "Size of pay gap")
-
 ```
 
 Using the data on the gender of employees working within each income quartile (herein referred to as lower, lower middle, upper middle, top), we were able to get a sense of the distribution of employees at the company level. For example Figure 4 shows that a higher concentration of women currently work in the lower quartile, while male employees dominate the top and upper middle quartiles. This is likely to be one of the driving factors behind the 14.4\% nation-wide pay inequality. However, in order to further this analysis, we would require data pertaining to the size of the gender pay gap within each income quartile. For example, we know that males dominate the top quartile - and females the lower quartile - but we do not know in which quartile is the pay gap more pronounced. 
@@ -195,6 +194,46 @@ p2 <- ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
   geom_hline(yintercept=0, color = "red")
 
 grid.arrange(p1, p2)
+```
+
+```{r}
+## For sic division
+order <- gpg_core %>%
+  group_by(division) %>%
+  summarize(iqr = IQR(DiffMedianHourlyPercent)) %>%
+  arrange(desc(iqr)) %>%
+  mutate(order = 1:n())
+
+library(ggplot2)
+library(gridExtra)
+p1 <- ggplot(gpg_core %>% left_join(order, by="division"), aes(x=reorder(abbreviate(as.factor(division), 20), order), 
+                                                         y=DiffMedianHourlyPercent)) +
+  geom_jitter(aes(color=gpg_core$division)) +
+  geom_boxplot(width=0.2,
+               outlier.shape = NA) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "None") +
+  scale_x_discrete("Employer Size")
+
+## For company size
+order <- gpg_core %>%
+  group_by(EmployerSize) %>%
+  summarize(iqr = IQR(DiffMedianHourlyPercent)) %>%
+  arrange(desc(iqr)) %>%
+  mutate(order = 1:n())
+
+p2 <- ggplot(gpg_core %>% left_join(order, by="EmployerSize"), aes(x=reorder(EmployerSize, order), 
+                                                             y=DiffMedianHourlyPercent)) +
+  geom_jitter(aes(color=gpg_core$EmployerSize)) +
+  geom_boxplot(width=0.2,
+               outlier.shape = NA) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1),
+        legend.position = "None") +
+  scale_x_discrete("Employer Size")
+
+grid.arrange(p1, p2, ncol=2)
 ```
 
 SIC division was identified as a more useful stratification variable. However, there was yet an obvious problem in that two of the divisions comprise just three companies each: activities of extraterritorial organisations and bodies, and activities of households as employers. We excluded these two divisions for the following reasons:
