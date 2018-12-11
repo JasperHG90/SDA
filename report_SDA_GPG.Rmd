@@ -3,7 +3,7 @@ title: "The Gender Gap in Compensation among UK firms"
 author: "An-Chiao Liu, Gabriel Naylor-Leyland & Jasper Ginn"
 output:
   pdf_document: default
-  html_notebook: default
+  #html_notebook: default
 header-includes:
  \usepackage{float}
  \usepackage{setspace}
