@@ -16,6 +16,7 @@ if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
   
   gpg_core <- readRDS("data/gpg_core.rds")
   gpg_meta <- readRDS("data/gpg_meta.rds")
+  reclassified <- readRDS("data/reclassified.rds")
   
 } else {
   
