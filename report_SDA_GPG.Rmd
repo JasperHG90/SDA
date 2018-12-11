@@ -9,7 +9,7 @@ header-includes:
  \usepackage{setspace}
  \doublespacing
  \floatplacement{figure}{H}
-#bibliography: bib.bib
+bibliography: bib.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -55,6 +55,8 @@ library(RColorBrewer)
 ```
 
 # Introduction
+
+[-@UKGOVGPG] <!-- Don't change this line it ensures that the reference at the bottom shows up! -->
 
 The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs?
 
@@ -176,7 +178,7 @@ marginerror <- survey::SE(srs_mean)*1.96
 
 Firstly, we opted to generate a sample of 1000 random companies out of the 6707 available, with each company given an equal probability of being sampled (1000 / 6707 = 14.9\%). This method is known as a simple random sample (SRS), and requires the assumption that a random sample is representative of the target population. The sample is taken without replacement, i.e. no company can be included more than once in the sample. 
 
-Working with this SRS of 1000 companies, we found that the gender pay gap stands at `r round(unname(srs_mean[2]), 4)*100` \% and `r round(unname(srs_mean[1]), 4)*100` \% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2\% and 14.4\%. 95\% confidence intervals for these percentages show little variation from our original population values, with the population values falling within the 95 \% CI for both metrics, shown in the table below.  
+Working with this SRS of 1000 companies, we found that the gender pay gap stands at `r round(unname(srs_mean[2]), 4)*100` \% and `r round(unname(srs_mean[1]), 4)*100` \% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2\% and 14.4\%. 95\% confidence intervals for these percentages show little variation from our original population values, with the population values falling within the 95 \% CI for both metrics, shown in the table below.
 
 ```{r}
 CI <- data.frame(
@@ -394,8 +396,6 @@ Firstly, we calculated the existing CV, taken from the optimised stratified samp
 
 It is also of great interest to sample at the level of the individual employee, rather than at the company level. This can be done with a cluster sampling design. This method requires the weighting of the data according to the size of the company. In absence of the exact company size data, we opted to use the midpoints of the size categories as surrogate company sizes. The largest size category was an exception; we used the value of 20,000 to weight these companies. Companies not providing the number of employees were weighted as 0, and thus excluded from this analysis. Using this sampling design, we found that a weighted average for the gender pay gap stands at 16\%, in favour of men. 
 
-
-
 ################ Discuss potential non-sampling, sampling, and non-response errors.
 #8.	Another way to think about sampling is not at the company level, but at the level of the individual. Unequal pay at very large companies of course has a larger impact than at small companies. We lack data for companies with <250 employees, but could still weight the data according to the size of the company to inspect the gender pay gap for individuals in the UK who work at companies with > 250 employees.
 
@@ -403,20 +403,7 @@ It is also of great interest to sample at the level of the individual employee, 
 
 #b.	Use the strategy you describe under a. to finally say something about the size of the gender pay gap.
 
-
-
-
-
-
-
-
-References: 
-[1] BRIEFING PAPER
-Number 7068, 28 September 2018
-The Gender Pay Gap
-www.parliament.uk/commons-library | intranet.parliament.uk/commons-library | papers@parliament.uk | @commonslibrary
-By Feargal McGuinness Doug Pyper
-## TODO:
+- TODO:
 
 - Stratification:
   * Compare the two variables
@@ -424,14 +411,6 @@ By Feargal McGuinness Doug Pyper
   * Horvitz-thompson (Neyman) optimal allocation
   * How to oversample from specific strata to reduce overall variance
   (See code Peter week 5 on stratification)
-  
-  
-  
-  
-  
-  
-  
-  
   
   
 throwaway work:
@@ -442,3 +421,5 @@ Another variable on which to stratify is EmployerSize. The data are already prov
 Given that the premise of stratified samples is to increase the precision/ lower the SE, this sample has not performed its desired function. Therefore, it was necessary for us to implement an optimal allocation strategy, so that each size division is more apporopriately represented in the sample. It is of interest to take a larger sample from strata in which there is more variation. For this, we (attempted to use) used the Neyman Allocation. ... 
 
 The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs? 
+
+# References
