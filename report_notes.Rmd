@@ -4,11 +4,14 @@ author: "An-Chiao Liu, Gabriel Naylor-Leyland & Jasper Ginn"
 output:
   pdf_document: default
   html_notebook: default
+header-includes:
+ \usepackage{float}
+ \floatplacement{figure}{H}
 #bibliography: bib.bib
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(fig.pos="H", fig.width = 5, fig.height = 4, echo = FALSE, warning = FALSE, message = FALSE)
 
 # Clean environment
 rm(list=ls())
@@ -45,10 +48,26 @@ library(ggplot2)
 library(ggExtra)
 library(tidyr)
 library(dplyr)
+library(ggthemes)
+library(RColorBrewer)
 ```
 
+# Introduction
 
-```{r, fig.cap="Proportion of males against females across the UK"}
+The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs?
+
+This report will focus on the wage gap in the UK in 2017. The data we analyse throughout the report comprise all companies with over 250 employees, and a small amount of smaller companies. As of 2017, it is required by the UK government that all such companies publish information pertaining to the pay of employees for the purpose of showing whether there is indeed a difference in the pay of male and female employees. This dataset is thus well protected against non-response errors, given that failure to comply with the regulations can lead to enforcement from the Equality and Human Rights Commission [1]. In addition, non-sampling errors are also well protected via the use of clear and simple categories, for example, size brackets for the number of employees. 
+Our aim is to create an efficient sampling design, from which we can make accurate calculations by using a smaller sample. We will compare the precision of a number of different such designs. Their accuracy will be measured against the results obtained from the complete data analysis. 
+
+One element of the data which we will refer to throughout this report is the Standard Industrial Classification (SIC). This is a widely used system for classifying companies into certain larger industries. Another important variable in the data is the size of an employer ("EmployerSize"), which categorises each company into seven distinct sizes: size not provided, less than 250, 250 to 499, 500 to 999, 1000 to 4999, 5000 to 19,999, and 20,000 or more. We will discuss in detail whether using information on the gender pay gap within these categories can lead to better sampling designs. 
+
+Before conducting our analysis, we first made some modifications to the dataset. Firstly, the information that was not necessary was stored in a separate dataframe, which we did not use. For example, the person responsible for the submission of the data was not relevant, and was thus not included in our main dataset. For our analysis, 6 companies were removed, for reasons explained further in the sampling section. We thus finally performed our analyses on the dataset with 6707 companies. 
+
+# Population data analysis
+
+Our analysis found that, across the population (of provided data), the average monthly wage for men was 14.4\% higher than that for women. It should be noted that this provides only an initial insight into the extent of the gender gap in the UK, and should be interpreted with caution. For instance, it can often be more relevant to assess the size of gender pay gaps in terms of the median wage, so that the few disproportionately high earners do not skew the results. To improve the accuracy of this 'population' gender gap we should have weighted the population mean based on the size of the companies, so that the larger companies hold more influence on the population statistics. However, with the data provided, it would be difficult to achieve a meaningful accuracy, given that we are not provided with the exact size of the companies. (However we do try see question 8)
+
+```{r, fig.pos="H", fig.cap="Proportion of males against females across the UK"}
 # Number of males/females
 gpg_core %>%
   # Subset for male / female columns
@@ -59,26 +78,29 @@ gpg_core %>%
   ggplot(., aes(x = variable, y=value, fill = variable)) +
     #geom_jitter(alpha=0.2) +
     geom_boxplot() +
-    theme_bw() 
+    theme_bw() +
+    scale_fill_brewer(palette = "Set2") +
+    scale_x_discrete(name = "") +
+    scale_y_continuous("Percentage") +
+    theme(legend.position = "None")
 ```
-#Introduction
-The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs?
 
-This report will focus on the wage gap in the UK in 2017. The data we analyse throughout the report comprise all companies with over 250 employees, and a small amount of smaller companies. As of 2017, it is required by the UK government that all such companies publish information pertaining to the pay of employees for the purpose of showing whether there is indeed a difference in the pay of male and female employees. This dataset is thus well protected against non-response errors, given that failure to comply with the regulations can lead to enforcement from the Equality and Human Rights Commission [1]. In addition, non-sampling errors are also well protected via the use of clear and simple categories, for example, size brackets for the number of employees. 
-Our aim is to create an efficient sampling design, from which we can make accurate calculations by using a smaller sample. We will compare the precision of a number of different such designs. Their accuracy will be measured against the results obtained from the complete data analysis. 
-
-One element of the data which we will refer to throughout this report is the Standard Industrial Classification (SIC). This is a widely used system for classifying companies into certain larger industries. Another important variable in the data is the EmployerSize, which categorises each company into seven distinct sizes: size not provided, less than 250, 250 to 499, 500 to 999, 1000 to 4999, 5000 to 19,999, and 20,000 or more. We will discuss in detail whether using information on the gender pay gap within these categories can lead to better sampling designs. 
-
-Before conducting our analysis, we first made some modifications to the dataset. Firstly, the information that was not necessary was stored in a separate dataframe, which we did not use. For example, the person responsible for the submission of the data was not relevant, and was thus not included in our main dataset. For our analysis, 6 companies were removed, for reasons explained further in the sampling section. We thus finally performed our analyses on the dataset with 6707 companies. 
-
-#Population data analysis
-Our analysis found that, across the population (of provided data), the average monthly wage for men was 14.4\% higher than that for women. It should be noted that this provides only an initial insight into the extent of the gender gap in the UK, and should be interpreted with caution. For instance, it can often be more relevant to assess the size of gender pay gaps in terms of the median wage, so that the few disproportionately high earners do not skew the results. To improve the accuracy of this 'population' gender gap we should have weighted the population mean based on the size of the companies, so that the larger companies hold more influence on the population statistics. However, with the data provided, it would be difficult to achieve a meaningful accuracy, given that we are not provided with the exact size of the companies. (However we do try see question 8)
 
 A brief analysis into the prevalence of the gender gap, namely in how many companies there exists a disparity in wages based on gender, revealed the following:
 749, or 11.17\%, of the companies in the dataset exhibited a gender gap (in the average hourly rate) favouring women, whereas 5904 companies, or 88.03\%, paid men a higher average wage. (The remaining 0.008\% of companies exhibited no gender wage gap). This indicates that many of the industry-wide differences in pay are likely to favour men. These figures are accompanied by the histogram (Figure 2), showing a heavy skew towards a 'positive' pay gap. Recall that a positive pay gap represents one in which males receive a higher wage than females.
 
-``` {r, fig.cap="A histogram of the frequency of different sized mean pay gaps"}
-hist(gpg_core$DiffMeanHourlyPercent, main = "Gender gap in mean hourly pay (%)", xlim = c(-1, 1), xlab = "Size of pay gap")
+``` {r, fig.cap="A histogram of the frequency of different sized mean pay gaps", fig.align="center", fig.show="hold", fig.width=3, fig.height=3}
+ggplot(gpg_core, aes(x=DiffMeanHourlyPercent)) +
+  geom_histogram(color="black", fill = brewer.pal(1, "Set2")[1]) +
+  scale_x_continuous(name = "Size of the mean pay gap",
+                     limits = c(-1,1)) +
+  theme_bw()
+## Median
+ggplot(gpg_core, aes(x=DiffMedianHourlyPercent)) +
+  geom_histogram(color="black", fill = brewer.pal(1, "Set2")[2]) +
+  scale_x_continuous(name = "Size of the median pay gap",
+                     limits = c(-1,1)) +
+  theme_bw()
 ```
 
 The gender pay gap in the UK is also evident in the distribution of bonus payments; defined as any payment additional to an employee's salary. The gender gap for bonus payments stands at 14.1\% at the UK population level, again in favour of men. As previously, this statistic falls short of a true population average, owing to the lack of appropriate weighting. However, for the purpose of brevity, these will be referred to herein as the true population values. As previously mentioned, comparing the median (hourly) wage within a company can also be an effective way to study the gender pay gap. Therefore, by averaging the median wage across all UK companies, we found that the median male employee earns 12.2\% more than his female counterpart. 
@@ -86,13 +108,9 @@ The gender pay gap in the UK is also evident in the distribution of bonus paymen
 A glance at the distribution of both positive and negative wage inequalities again proves interesting:
 902, or 13.45\%, of UK companies pay a higher median wage to women in comparison to men - a significantly smaller figure than the 5257 companies, or 78.38\%, who provide a higher median wage to males. (The remaining 548 companies, or 8.22\%, provide an equal median wage). Similarly to the analysis of the mean wage, we can see from the histogram (Figure 3) that the distribution is strongly skewed in favour of higher male income. 
 
-```{r, fig.cap= "A histogram of the frequency of different sized median pay gaps"}
-hist(gpg_core$DiffMedianHourlyPercent, main = "Gender gap in median hourly pay (%)", xlim = c(-1, 1), xlab = "Size of pay gap")
-```
-
 Using the data on the gender of employees working within each income quartile (herein referred to as lower, lower middle, upper middle, top), we were able to get a sense of the distribution of employees at the company level. For example Figure 4 shows that a higher concentration of women currently work in the lower quartile, while male employees dominate the top and upper middle quartiles. This is likely to be one of the driving factors behind the 14.4\% nation-wide pay inequality. However, in order to further this analysis, we would require data pertaining to the size of the gender pay gap within each income quartile. For example, we know that males dominate the top quartile - and females the lower quartile - but we do not know in which quartile is the pay gap more pronounced. 
 
-```{r, fig.cap="Distribution of males and females within each pay quartile"}
+```{r, fig.cap="Distribution of males and females within each pay quartile", fig.height=3, fig.width=5}
 library(stringr)
 library(purrr)
 library(forcats)
@@ -108,10 +126,13 @@ gpg_core %>%
                               fct_relevel( c("lowerquartile", "lowermiddlequartile", 
                                              "uppermiddlequartile", "topquartile"))) %>%
   ggplot(., aes(x=quantile, y=avg, color = gender)) +
-    geom_line(aes(group = gender)) +
-    geom_point() +
+    geom_line(aes(group = gender), size=1.2) +
+    geom_point(size=3) +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 45, hjust=1))
+    theme(axis.text.x = element_text(angle = 15, hjust=1)) +
+    scale_y_continuous(name = "") +
+    scale_x_discrete(name = "", labels = c("Lower quartile", "Lower middle \nquartile", "Upper middle \nquartile", "Top quartile")) +
+    scale_color_brewer(palette = "Set2") 
   
 ```
 
@@ -122,6 +143,7 @@ The focus of this report largely falls on sampling methods, with the aim of maki
 library(survey)
 library(sampling)
 
+## Subset data
 gpg_core <- gpg_core %>%
   dplyr::select(uuid, EmployerSize, DiffMeanHourlyPercent, DiffMedianHourlyPercent, female, male,
          division)
@@ -167,34 +189,55 @@ The standard error for the estimate for the difference in mean hourly wage using
 
 When the statistic of interest (here, gender wage inequality) is known to correlate in some way with information provided in the sampling frame, it can be useful to stratify. Arranging the data into strata prior to sampling can optimise the sampling design in the sense that the standard error of the 'predictions' can be reduced, thus improving the precision. This will only be the case if we see small variance within the strata, and larger variance between the strata. This will make for a more efficient design for the reason that, if a large portion of the total variance is between the strata, only a small sample from each stratum will be necessary to make accurate predictions. 
 
-Based on rudimentary analysis of the two potential stratification variables SIC and EmployerSize, and with the sample of 1000 still the goal, we decided to stratify based on SIC division. Evidence supporting this decision is provided in Figure 5: violin plots of the strata. From these plots we can clearly rule out EmployerSize as a useful stratification variable given the great variation in wage difference within each employer size category. Additionally, post-hoc tests following an ANOVA on the different categories of EmployerSize revealed very little evidence of between-group differences (only one of the 21 pairwise comparisons showed a significant difference). On the contrary, running an ANOVA on the SIC divisions yielded many significant pairwise differences in the median pay gap. 
+```{r, fig.cap="Distribution of median and mean pay gap by employer size (ordered by interquartile range)", fig.show="hold", fig.width=5,fig.height=3, fig.align="center", fig.ncol=1}
+## For company size
+order <- gpg_core %>%
+  group_by(EmployerSize) %>%
+  summarize(iqr_med = IQR(DiffMedianHourlyPercent),
+            iqr_mean = IQR(DiffMeanHourlyPercent)) %>%
+  arrange(desc(iqr_med)) %>%
+  mutate(order_med = 1:n()) %>%
+  arrange(desc(iqr_mean)) %>%
+  mutate(order_mean = 1:n()) 
 
-```{r, fig.cap="Violin plots showing the between- and within-strata variance for each company size category"}
-library(gridExtra)
-# Plot the mean and median hourly difference
-p1 <- ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
-       #           DiffMedianHourlyPercent <= upper_bound) 
-       ,aes(x=EmployerSize , 
-            y=DiffMedianHourlyPercent, 
-            group=EmployerSize)) +
-  geom_violin() +
-  geom_boxplot(width = 0.1) +
-  coord_flip() +
-  #scale_y_continuous(breaks = seq(-1,1,0.2)) + 
-  geom_hline(yintercept=0, color = "red")
-p2 <- ggplot(gpg_core #%>% filter(DiffMedianHourlyPercent >= lower_bound,
-             #           DiffMedianHourlyPercent <= upper_bound) 
-             ,aes(x=EmployerSize , 
-                  y=DiffMeanHourlyPercent, 
-                  group=EmployerSize)) +
-  geom_violin() +
-  geom_boxplot(width = 0.1) +
-  coord_flip() +
-  #scale_y_continuous(breaks = seq(-1,1,0.2)) + 
-  geom_hline(yintercept=0, color = "red")
+## Median plot
+ggplot(gpg_core %>% left_join(order, by="EmployerSize"), aes(x=reorder(EmployerSize, order_med), 
+                                                             y=DiffMedianHourlyPercent)) +
+  geom_jitter(aes(color=gpg_core$EmployerSize)) +
+  geom_boxplot(width=0.2,
+               outlier.shape = NA) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1),
+        legend.position = "None") +
+  scale_x_discrete(name="") +
+  scale_y_continuous(name = "Difference in Median Hourly Pay") +
+  scale_color_brewer(palette = "Set2")
 
-grid.arrange(p1, p2)
+## Store in tmp data
+tmp <- gpg_core %>% 
+         left_join(order, by="EmployerSize") %>%
+           ## Remove excessive values (+1 & -1)
+           filter(DiffMeanHourlyPercent <= 1 & DiffMeanHourlyPercent >= -1)
+
+## Mean plot
+ggplot(tmp, 
+       aes(x=reorder(EmployerSize, order_mean), 
+       y=DiffMeanHourlyPercent)) +
+  labs(caption=paste0("NB: ", nrow(gpg_core) - nrow(tmp), 
+                      " observations have been removed due to excessive values (+-100% mean pay gap)"))+
+  geom_jitter(aes(color=EmployerSize)) +
+  geom_boxplot(width=0.2,
+               outlier.shape = NA) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1),
+        legend.position = "None",
+        plot.caption = element_text(size=7)) +
+  scale_x_discrete(name="") +
+  scale_y_continuous(name = "Difference in Mean Hourly Pay") +
+  scale_color_brewer(palette = "Set2")
 ```
+
+Based on rudimentary analysis of the two potential stratification variables SIC and EmployerSize, and with the sample of 1000 still the goal, we decided to stratify based on SIC division. Evidence supporting this decision is provided in Figure 5: violin plots of the strata. From these plots we can clearly rule out EmployerSize as a useful stratification variable given the great variation in wage difference within each employer size category. Additionally, post-hoc tests following an ANOVA on the different categories of EmployerSize revealed very little evidence of between-group differences (only one of the 21 pairwise comparisons showed a significant difference). On the contrary, running an ANOVA on the SIC divisions yielded many significant pairwise differences in the median pay gap. 
 
 ```{r}
 ## For sic division
@@ -205,9 +248,9 @@ order <- gpg_core %>%
   mutate(order = 1:n())
 
 library(ggplot2)
-library(gridExtra)
-p1 <- ggplot(gpg_core %>% left_join(order, by="division"), aes(x=reorder(abbreviate(as.factor(division), 20), order), 
-                                                         y=DiffMedianHourlyPercent)) +
+ggplot(gpg_core %>% left_join(order, by="division"), 
+             aes(x=reorder(abbreviate(as.factor(division), 20), order), 
+             y=DiffMedianHourlyPercent)) +
   geom_jitter(aes(color=gpg_core$division)) +
   geom_boxplot(width=0.2,
                outlier.shape = NA) +
@@ -215,25 +258,6 @@ p1 <- ggplot(gpg_core %>% left_join(order, by="division"), aes(x=reorder(abbrevi
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "None") +
   scale_x_discrete("Employer Size")
-
-## For company size
-order <- gpg_core %>%
-  group_by(EmployerSize) %>%
-  summarize(iqr = IQR(DiffMedianHourlyPercent)) %>%
-  arrange(desc(iqr)) %>%
-  mutate(order = 1:n())
-
-p2 <- ggplot(gpg_core %>% left_join(order, by="EmployerSize"), aes(x=reorder(EmployerSize, order), 
-                                                             y=DiffMedianHourlyPercent)) +
-  geom_jitter(aes(color=gpg_core$EmployerSize)) +
-  geom_boxplot(width=0.2,
-               outlier.shape = NA) +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1),
-        legend.position = "None") +
-  scale_x_discrete("Employer Size")
-
-grid.arrange(p1, p2, ncol=2)
 ```
 
 SIC division was identified as a more useful stratification variable. However, there was yet an obvious problem in that two of the divisions comprise just three companies each: activities of extraterritorial organisations and bodies, and activities of households as employers. We excluded these two divisions for the following reasons:
