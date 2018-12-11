@@ -188,7 +188,7 @@ if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
     # Drop capital-case columns
     select(-SECTION, -DIVISION, -CLASS)
   
-  # Remove SIC divisions 
+  # Remove these SIC divisions 
   gpg_core <- gpg_core %>% 
     filter(!division %in% c("ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES",
                             "ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS"))
