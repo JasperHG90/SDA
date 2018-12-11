@@ -47,6 +47,8 @@ https://github.com/JasperHG90/SDA.git
 
 In a terminal or from the [GitHub desktop](https://desktop.github.com/) application.
 
+Navigate into the folder and open 'practical.Rproj' to open the project.
+
 Should you want to recreate the data, you should remove the [gpg_core.rds](https://github.com/JasperHG90/SDA/blob/master/data/gpg_core.rds), [gpg_meta.rds](https://github.com/JasperHG90/SDA/blob/master/data/gpg_meta.rds) and [reclassified.rds](https://github.com/JasperHG90/SDA/blob/master/data/reclassified.rds) data files in the [data](https://github.com/JasperHG90/SDA/tree/master/data) folder. The next time that you run the analysis script and, in particular, the following line of code, the data will be re-created from the original datasets.
 
 ```{r}
