@@ -1,6 +1,14 @@
 # Gender paygap project
 
-Link to the presentation: https://docs.google.com/presentation/d/13akRqr7Rc_xBN7ihqFFdrieKUvlg8HwmQgiHGjH_pWU/edit?usp=sharing
+This repository contains our project files for the course 'Survey Data Analysis' at Utrecht University. The analysis and code can be found in the [R markdown file](https://github.com/JasperHG90/SDA/blob/master/report_SDA_GPG.Rmd). 
+
+We separated data preprocessing, dependency management and utility functions from the main analysis file and stored them in their own R files. These files are called in the Rmd file by using the `source()` function. For more information, see:
+
+1. [install_dependencies.R](https://github.com/JasperHG90/SDA/blob/master/R/utilities/install_dependencies.R) for the R file that installs missing dependencies to the user's directory.
+2. [preprocess_data.R](https://github.com/JasperHG90/SDA/blob/master/R/utilities/preprocess_data.R) for the R file that takes the [original dataset](https://github.com/JasperHG90/SDA/blob/master/data/gender_pay_gap.Rds) and preprocesses it such that it is ready to be used for analysis. This process will only be called **once** if the preprocessed data does not yet exist in the [data](https://github.com/JasperHG90/SDA/tree/master/data) folder.
+3. [functions.R](https://github.com/JasperHG90/SDA/blob/master/R/utilities/functions.R) for the R file that defines utility functions (`stratify()`, `neyman()` and `sample_size()`) and their documentation.
+
+The accompanying presentation for this project can be found [here](https://docs.google.com/presentation/d/13akRqr7Rc_xBN7ihqFFdrieKUvlg8HwmQgiHGjH_pWU/edit?usp=sharing)
 
 This repository contains project files for the Gender Paygap project for the course 'Survey Data Analysis' at Utrecht University.
 
