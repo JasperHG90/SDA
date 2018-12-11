@@ -189,9 +189,30 @@ if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
     select(-SECTION, -DIVISION, -CLASS)
   
   # Remove these SIC divisions 
+  # See report for reason why
   gpg_core <- gpg_core %>% 
     filter(!division %in% c("ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES",
                             "ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS"))
+  
+  ## Helper function that calculates the number of employees given EmployerSize input 
+  calc_employees <- function(x) {
+    
+    switch(
+      x,
+      "Not Provided" = 0,
+      "Less than 250" = 250 / 2,
+      "250 to 499" = 375,
+      "500 to 999" = 750,
+      "1000 to 4999" = 3000,
+      "5000 to 19,999" = 12500,
+      "20,000 or more" = 20000
+    )
+    
+  }
+  
+  ## Add number of employees
+  gpg_core <- gpg_core %>%
+    mutate(NumEmp = sapply(as.character(gpg_core$EmployerSize), calc_employees) %>% unname())
   
   # Write data
   saveRDS(gpg_core, "data/gpg_core.rds")
