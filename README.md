@@ -37,7 +37,7 @@ Finally, we added a column with the estimated number of employees ("NumEmp"). Th
 
 Clone this repository by downloading it as a zip file (under 'clone or download'). 
 
-[!download](download.png)
+![download](download.png)
 
 If you're using git, execute:
 
