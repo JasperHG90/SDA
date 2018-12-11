@@ -6,6 +6,8 @@ output:
   html_notebook: default
 header-includes:
  \usepackage{float}
+ \usepackage{setspace}
+ \doublespacing
  \floatplacement{figure}{H}
 #bibliography: bib.bib
 ---
@@ -186,7 +188,6 @@ knitr::kable(CI)
 
 The standard error for the estimate for the difference in mean hourly wage using the SRS is 0.0041. Using this sampling design, we achieve a margin of error of  0.0041*1.96 = 0.8\% at the 5\% level. This relates to the sampling error - the difference between the sampled statistic and the population statistic is just 0.8\%. We will use this SRS as a reference to compare all future sampling designs against, with the aim of creating a sampling design with a small standard error - this will indicate a small sampling error. These comparisons will be done via the design effect $\frac{Variance_{design}}{Variance_{SRS}}$. 
 
-
 When the statistic of interest (here, gender wage inequality) is known to correlate in some way with information provided in the sampling frame, it can be useful to stratify. Arranging the data into strata prior to sampling can optimise the sampling design in the sense that the standard error of the 'predictions' can be reduced, thus improving the precision. This will only be the case if we see small variance within the strata, and larger variance between the strata. This will make for a more efficient design for the reason that, if a large portion of the total variance is between the strata, only a small sample from each stratum will be necessary to make accurate predictions. 
 
 ```{r, fig.cap="Distribution of median and mean pay gap by employer size (ordered by interquartile range)", fig.show="hold", fig.width=5,fig.height=3, fig.align="center", fig.ncol=1}
@@ -239,25 +240,54 @@ ggplot(tmp,
 
 Based on rudimentary analysis of the two potential stratification variables SIC and EmployerSize, and with the sample of 1000 still the goal, we decided to stratify based on SIC division. Evidence supporting this decision is provided in Figure 5: violin plots of the strata. From these plots we can clearly rule out EmployerSize as a useful stratification variable given the great variation in wage difference within each employer size category. Additionally, post-hoc tests following an ANOVA on the different categories of EmployerSize revealed very little evidence of between-group differences (only one of the 21 pairwise comparisons showed a significant difference). On the contrary, running an ANOVA on the SIC divisions yielded many significant pairwise differences in the median pay gap. 
 
-```{r}
+```{r, fig.cap="Distribution of median and mean pay gap by SIC division (ordered by interquartile range)", fig.show="hold", fig.width=6,fig.height=3, fig.align="center", fig.ncol=1}
 ## For sic division
 order <- gpg_core %>%
   group_by(division) %>%
-  summarize(iqr = IQR(DiffMedianHourlyPercent)) %>%
-  arrange(desc(iqr)) %>%
-  mutate(order = 1:n())
+  summarize(iqr_med = IQR(DiffMedianHourlyPercent),
+            iqr_mean = IQR(DiffMeanHourlyPercent)) %>%
+  arrange(desc(iqr_med)) %>%
+  mutate(order_med = 1:n()) %>%
+  arrange(desc(iqr_mean)) %>%
+  mutate(order_mean = 1:n()) 
 
-library(ggplot2)
+## Plot median hourly pay
 ggplot(gpg_core %>% left_join(order, by="division"), 
-             aes(x=reorder(abbreviate(as.factor(division), 20), order), 
+             aes(x=reorder(tolower(abbreviate(as.factor(division), 20)), order_med), 
              y=DiffMedianHourlyPercent)) +
   geom_jitter(aes(color=gpg_core$division)) +
   geom_boxplot(width=0.2,
                outlier.shape = NA) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.position = "None") +
-  scale_x_discrete("Employer Size")
+  theme(axis.text.x = element_text(angle = 25, hjust = 1, size=8),
+        legend.position = "None",
+        axis.text.y = element_text(size=9)) +
+  scale_x_discrete(name="") +
+  scale_y_continuous(name = "Difference in Median \nHourly Pay") 
+
+## Plot mean hourly pay
+
+## Make temp dataset
+tmp <- gpg_core %>% 
+         left_join(order, by="division") %>%
+           ## Remove excessive values (+1 & -1)
+           filter(DiffMeanHourlyPercent <= 1 & DiffMeanHourlyPercent >= -1)
+
+ggplot(tmp, 
+        aes(x=reorder(tolower(abbreviate(as.factor(division), 20)), order_mean), 
+        y=DiffMeanHourlyPercent)) +
+  geom_jitter(aes(color=division)) +
+  labs(caption=paste0("NB: ", nrow(gpg_core) - nrow(tmp), 
+                      " observations have been removed due to excessive values (+-100% mean pay gap)"))+
+  geom_boxplot(width=0.2,
+               outlier.shape = NA) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1, size=8),
+        legend.position = "None",
+        plot.caption = element_text(size=7),
+        axis.text.y = element_text(size=9)) +
+  scale_x_discrete(name="") +
+  scale_y_continuous(name = "Difference in Mean \nHourly Pay") 
 ```
 
 SIC division was identified as a more useful stratification variable. However, there was yet an obvious problem in that two of the divisions comprise just three companies each: activities of extraterritorial organisations and bodies, and activities of households as employers. We excluded these two divisions for the following reasons:
@@ -269,7 +299,7 @@ We then used a proportional-to-size (PPS) procedure to draw a stratified sample 
 
 The PPS sample tells us that there is a 14.24\% difference in the average wage - closer to the population value (14.4\%) than the SRS (15.02%). The margin of error here is 0.74\% (standard error = 0.0037645), which gives a sense of how far our predictions of the wage difference differ from the population values. This is calculated by 1.96*(s.e.), where 1.96 is the 95\% z-value used to construct confidence intervals. The margin of error is, as expected, slightly lower than that of the SRS (0.8\%). The design effect of 0.8771 means a sample of only 877 would be required to achieve the same precision as our earlier SRS. These figures indicate that we can more efficiently (design effect) and accurately (margin of error) make inferences on the population with this sampling design. 
 
-However, it is still possible to optimise the sample, via the choice of stratum sample size. This can be done by using a Neyman Allocation. This method allocates an optimal size for each stratum via the formula $\frac{(N_h * V_h)} {\Sigma (N_h * V_h)}$, where $N_h$ and $V_h$ are the stratum sizes and variances respectively. In this way, it is possible to oversample from certain strata - namely those with higher variances - in order to achieve a smaller standard error. According to this sampling design, the gender pay gap stands at 14.05\%. While this underestimates the pay gap slightly more than the PPS sample, the standard error of 0.0037412 is marginally smaller in comparison. This means we now have a smaller, better design effect of 0.8685. Consequently, we consider this design more efficient than the PPS, requiring fewer companies to achieve the same precision. We therefore conclude that, when seeking to maximise precision within a sample of 1000 companies, stratifying based on SIC division and using Neyman's optimal allocation is better than taking an SRS or a PPS stratified sample. Other sampling designs are beyond the scope of this report. 
+However, it is still possible to optimise the sample, via the choice of stratum sample size. This can be done by using a Neyman Allocation. This method allocates an optimal size for each stratum via the formula $\frac{(N_h \cdot V_h)} {\Sigma (N_h \cdot V_h)}$, where $N_h$ and $V_h$ are the stratum sizes and variances respectively. In this way, it is possible to oversample from certain strata - namely those with higher variances - in order to achieve a smaller standard error. According to this sampling design, the gender pay gap stands at 14.05\%. While this underestimates the pay gap slightly more than the PPS sample, the standard error of 0.0037412 is marginally smaller in comparison. This means we now have a smaller, better design effect of 0.8685. Consequently, we consider this design more efficient than the PPS, requiring fewer companies to achieve the same precision. We therefore conclude that, when seeking to maximise precision within a sample of 1000 companies, stratifying based on SIC division and using Neyman's optimal allocation is better than taking an SRS or a PPS stratified sample. Other sampling designs are beyond the scope of this report. 
 
 ```{r}
 # proportional-to-size stratified sample for 'division'
@@ -282,7 +312,7 @@ stratdesign_prop <- svydesign(ids=sample_stratum$uuid,
                               data = sample_stratum)
 
 # Calculate the population value & design effect
-svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)
+stratdesign_mean <- svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)
 
 # Use neyman allocation to stratify optimally
 sample_optim <- stratify(gpg_core, 
@@ -292,7 +322,7 @@ sample_optim <- stratify(gpg_core,
                          optim=TRUE, 
                          optimVar = "DiffMeanHourlyPercent")
 
-length(which(sample_optim$Stratum == 1))
+length_stratum_one <- length(which(sample_optim$Stratum == 1))
 
 # Surveydesign for stratified sample
 sample_optim$Prob <- 1 / sample_optim$Prob
@@ -302,7 +332,7 @@ stratdesign_optim <- svydesign(ids=sample_optim$uuid,
                          #weights = ~Prob,
                          data = sample_optim)
 
-
+## Make data frame
 comparedesign <- data.frame(
   "Mean wage gap estimate" = c(as.numeric(svymean(~DiffMeanHourlyPercent, swordesign)), 
                                as.numeric(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)), 
@@ -316,9 +346,12 @@ comparedesign <- data.frame(
   #"Design Effect" = c(1, )
 )         
 row.names(comparedesign) <- c("SRS", "PPS", "Optimised")
-knitr::kable(comparedesign)
+knitr::kable(comparedesign, caption = "Gender gap estimates under different sampling designs",
+             col.names = c("Mean wage gap estimate", "SE", "Margin of error"))
 ```
-#Sample size determination based on the coefficient of variation
+
+# Sample size determination based on the coefficient of variation
+
 Another common way in which to sample is to base the sample size around a prerequired level of precision. In this situation, the precision of the sample estimates dictates the sample size, as opposed to a fixed budget or sample size. With this technique in mind, we aim to find the sample size required in order to achieve a coefficient of variation of 0.01. The coefficient of variation (CV) is defined as the standard error of the wage gap, relative to the size of the wage gap - a standardised error term.
 
 Firstly, we calculated the existing CV, taken from the optimised stratified sample, to be 0.026. This is significantly higher than the target of 0.01. In order to calculate the optimal sample size in this situation, we can systematically increase the sample size, n, until the CV falls at or below the target of 0.01. This algorithm is implemented in R by the use of for loops and if statements. By doing so, we find that a sample of 3919 is sufficient. Therefore, with a level of precision as determined by a CV of 0.01, it would be necessary only to sample 58\% of UK companies with over 250 employees, while still obtaining the same information. 
