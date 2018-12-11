@@ -169,8 +169,11 @@ swordesign <- svydesign(ids=sample$uuid, fpc=~fpc, data = sample)
 # Size of gender pay gap for mean and median pay
 srs_mean <- svymean(~DiffMeanHourlyPercent + DiffMedianHourlyPercent, swordesign)
 
+## Save the margin of error in R object
 marginerror <- survey::SE(srs_mean)*1.96
+
 ```
+
 Firstly, we opted to generate a sample of 1000 random companies out of the 6707 available, with each company given an equal probability of being sampled (1000 / 6707 = 14.9\%). This method is known as a simple random sample (SRS), and requires the assumption that a random sample is representative of the target population. The sample is taken without replacement, i.e. no company can be included more than once in the sample. 
 
 Working with this SRS of 1000 companies, we found that the gender pay gap stands at `r round(unname(srs_mean[2]), 4)*100` \% and `r round(unname(srs_mean[1]), 4)*100` \% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2\% and 14.4\%. 95\% confidence intervals for these percentages show little variation from our original population values, with the population values falling within the 95 \% CI for both metrics, shown in the table below.  
@@ -183,7 +186,8 @@ CI <- data.frame(
               paste0(round(srs_mean[2] + marginerror[2], digits=4) * 100, "%"))
 )
 row.names(CI) <- c("Mean", "Median")
-knitr::kable(CI)
+knitr::kable(CI, caption = "Lower and upper CI for the SRS design",
+             col.names = c("Lower CI", "Upper CI"))
 ```
 
 The standard error for the estimate for the difference in mean hourly wage using the SRS is 0.0041. Using this sampling design, we achieve a margin of error of  0.0041*1.96 = 0.8\% at the 5\% level. This relates to the sampling error - the difference between the sampled statistic and the population statistic is just 0.8\%. We will use this SRS as a reference to compare all future sampling designs against, with the aim of creating a sampling design with a small standard error - this will indicate a small sampling error. These comparisons will be done via the design effect $\frac{Variance_{design}}{Variance_{SRS}}$. 
@@ -239,6 +243,38 @@ ggplot(tmp,
 ```
 
 Based on rudimentary analysis of the two potential stratification variables SIC and EmployerSize, and with the sample of 1000 still the goal, we decided to stratify based on SIC division. Evidence supporting this decision is provided in Figure 5: violin plots of the strata. From these plots we can clearly rule out EmployerSize as a useful stratification variable given the great variation in wage difference within each employer size category. Additionally, post-hoc tests following an ANOVA on the different categories of EmployerSize revealed very little evidence of between-group differences (only one of the 21 pairwise comparisons showed a significant difference). On the contrary, running an ANOVA on the SIC divisions yielded many significant pairwise differences in the median pay gap. 
+
+```{r, "ANOVAS", include=FALSE, echo=FALSE, eval=FALSE} 
+
+## NB. This codeblock is not included in the report because eval=FALSE & include = FALSE --> This is by design. You can still run the code manually if desired.
+
+## Employersize
+
+# Run ANOVA
+a_EMPSIZE_mean <- aov(DiffMeanHourlyPercent ~ EmployerSize, gpg_core)
+# Run post-hoc tests
+TukeyHSD(a_EMPSIZE_mean, conf.level=0.95) # --> Almost no differences between grousp
+
+# Run ANOVA
+a_EMPSIZE_median <- aov(DiffMedianHourlyPercent ~ EmployerSize, gpg_core)
+# Run post-hoc tests
+TukeyHSD(a_EMPSIZE_median, conf.level=0.95) # --> Almost no differences between grousp
+
+## SIC divions
+
+# Abbreviate division names
+gpg_core$div_shortened <- abbreviate(gpg_core$division)
+
+# Run ANOVA
+a_DIV_mean <- aov(DiffMeanHourlyPercent ~ div_shortened, gpg_core)
+# Run post-hoc tests
+TukeyHSD(a_DIV_mean, conf.level=0.95) # --> there are differences between groups
+
+# Run ANOVA
+a_DIV_median <- aov(DiffMedianHourlyPercent ~ div_shortened, gpg_core)
+# Run post-hoc tests
+TukeyHSD(a_DIV_median, conf.level=0.95) # --> there are differences between groups. Less pronounced than mean because of smaller variance.
+```
 
 ```{r, fig.cap="Distribution of median and mean pay gap by SIC division (ordered by interquartile range)", fig.show="hold", fig.width=6,fig.height=3, fig.align="center", fig.ncol=1}
 ## For sic division
