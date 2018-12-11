@@ -18,7 +18,7 @@ We augmented the data by extracting postal codes and counties. We did this becau
 
 We further received a file containing Standard Industrial Codes (SIC). This file can be found [here](https://github.com/JasperHG90/SDA/blob/master/data/sicCodes.Rds). We merged this file with the paygap data to obtain labels for the SIC divisions.
 
-We re-classified six companies because their classification did not correspond to their activities. These six companies are are printed below:
+We re-classified six companies because their classification did not correspond to their activities. These six companies, their new classification and the reason for their new classification are are shown below:
 
 | uuid|company_name               |company_website                                                                             |sic_division_before_recoding                            |sic_division_after_recoding                                          |reason                                                         |
 |----:|:--------------------------|:-------------------------------------------------------------------------------------------|:-------------------------------------------------------|:--------------------------------------------------------------------|:--------------------------------------------------------------|
@@ -29,11 +29,18 @@ We re-classified six companies because their classification did not correspond t
 | 2913|INTERSERVE FS (UK) LIMITED |https://www.interserve.com/docs/default-source/about/policies/gender-pay-gap-march-2018.pdf |ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS                   |CONSTRUCTION                                                         |Construction company according to the URL provided             |
 | 5085|SILK HEALTHCARE LIMITED    |https://www.mha.org.uk                                                                      |ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS                   |HUMAN HEALTH AND SOCIAL WORK ACTIVITIES                              |Healthcare company according to the URL                        |
 
+The above table is stored as a separate data file called `reclassified.rds` and can be found in the [data](https://github.com/JasperHG90/SDA/tree/master/data) folder.
+
 Finally, we added a column with the estimated number of employees ("NumEmp"). This value is based on the employer size ("EmployerSize") variable and is the midpoint of the range given by this variable. For example, if the value for EmployerSize is '500 to 999', then NumEmp value would be `(500 + 999) / 2`.
 
 ## Getting started
 
+Should you want to recreate the data, you should remove the [gpg_core.rds](https://github.com/JasperHG90/SDA/blob/master/data/gpg_core.rds), [gpg_meta.rds](https://github.com/JasperHG90/SDA/blob/master/data/gpg_meta.rds) and [reclassified.rds](https://github.com/JasperHG90/SDA/blob/master/data/reclassified.rds) data files in the [data](https://github.com/JasperHG90/SDA/tree/master/data) folder. The next time that you run the analysis script and, in particular, the following line of code, the data will be re-created from the original datasets.
 
+```{r}
+# Line from report_SDA_GPG.rdm that you should rerun --> line 27
+source("R/utilities/preprocess_data.R")
+```
 
 Re-creating the report requires `knitr` and an installation of `LaTeX`. The easiest way to install these dependencies is to execute
 
@@ -65,6 +72,5 @@ Which looks a LOT cleaner.  If you want to see what the intermediate output look
 ```r
 sample(1:1000, 5) #%>%
 mean()
-
 ```
 
