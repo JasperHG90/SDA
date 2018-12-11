@@ -180,19 +180,62 @@ if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
   
   # Merge with sic cores & set proper data types
   gpg_core <- gpg_core %>%
-    left_join(., sic, by="SicDivision") %>%
+    left_join(., sic, by="SicDivision") 
+  
+  ## Filter data for these divisions.
+  ## The divisions are suspicious because there are very few observations in the groups
+  gpg_core_t <- gpg_core %>% 
+    filter(DIVISION %in% c("ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES",
+                           "ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS")) %>%
+    left_join(gpg_meta, by="uuid")
+  
+  ## Reclassify these companies based on information we found 
+  reclassified <- data_frame(
+    uuid = c(2102, 2376, 2378, 2715, 2913, 5085),
+    company_name = gpg_core_t$EmployerName,
+    company_website = c("https://www.fishkeeper.co.uk/#",
+                        "https://www.bespokehotels.com/",
+                        "https://www.bespokehotels.com/",
+                        "https://www.homesforharingey.org/",
+                        "https://www.interserve.com/docs/default-source/about/policies/gender-pay-gap-march-2018.pdf",
+                        "https://www.mha.org.uk"),
+    sic_division_before_recoding = gpg_core_t$DIVISION,
+    sic_division_after_recoding = c(
+      "WHOLESALE AND RETAIL TRADE; REPAIR OF MOTOR VEHICLES AND MOTORCYCLES",
+      "ACCOMMODATION AND FOOD SERVICE ACTIVITIES",
+      "ACCOMMODATION AND FOOD SERVICE ACTIVITIES",
+      "REAL ESTATE ACTIVITIES",
+      "CONSTRUCTION",
+      "HUMAN HEALTH AND SOCIAL WORK ACTIVITIES"
+    ),
+    reason = c(
+      "Retail of aquariums",
+      "This is a hotel",
+      "This is a hotel (same company as above but different building)",
+      "According to website, they manage real estate",
+      "Construction company according to the URL provided",
+      "Healthcare company according to the URL"
+    )
+  )
+  
+  ## Replace divisions
+  gpg_core[gpg_core$uuid %in% c(2102, 2376, 2378, 2715, 2913, 5085),"DIVISION"] <- c(
+    "WHOLESALE AND RETAIL TRADE; REPAIR OF MOTOR VEHICLES AND MOTORCYCLES",
+    "ACCOMMODATION AND FOOD SERVICE ACTIVITIES",
+    "ACCOMMODATION AND FOOD SERVICE ACTIVITIES",
+    "REAL ESTATE ACTIVITIES",
+    "CONSTRUCTION",
+    "HUMAN HEALTH AND SOCIAL WORK ACTIVITIES"
+  )
+  
+  ## Set proper datatypes
+  gpg_core <- gpg_core %>%
     mutate(county = as_factor(county),
            section = as_factor(SECTION),
            division = as_factor(DIVISION),
            class = as_factor(CLASS)) %>%
     # Drop capital-case columns
     select(-SECTION, -DIVISION, -CLASS)
-  
-  # Remove these SIC divisions 
-  # See report for reason why
-  gpg_core <- gpg_core %>% 
-    filter(!division %in% c("ACTIVITIES OF EXTRATERRITORIAL ORGANISATIONS AND BODIES",
-                            "ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS"))
   
   ## Helper function that calculates the number of employees given EmployerSize input 
   calc_employees <- function(x) {
@@ -217,11 +260,12 @@ if(all(c("gpg_core.rds", "gpg_meta.rds") %in% list.files("data"))) {
   # Write data
   saveRDS(gpg_core, "data/gpg_core.rds")
   saveRDS(gpg_meta, "data/gpg_meta.rds")
+  saveRDS(reclassified, "data/reclassified.rds")
   
   cat(paste0("\nDone in ", round(as.numeric(Sys.time() - t1)), " seconds\n"))
   
   # Remove objects that are no longer needed
-  keep <- c("gpg_core", "gpg_meta")
+  keep <- c("gpg_core", "gpg_meta", "reclassified")
   rm(list=setdiff(ls(), keep))
   
 }
