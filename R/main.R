@@ -7,6 +7,7 @@
 
 # Clean environment
 rm(list=ls())
+library(dplyr)
 
 # Preparation --------
 
@@ -226,9 +227,9 @@ a <- aov(DiffMeanHourlyPercent ~ EmployerSize, gpg_core)
 TukeyHSD(a, conf.level=0.95) # --> no difference between the groups
 
 ## SIC divisions
-
+library(RColorBrewer)
 # Look at percentages male/female by SIC division
-gpg_core %>%
+by_sic <- gpg_core %>%
   # Select male/female/division columns
   select(male, female, division) %>%
   # Take columns and reshape to two columns (variable names and values), disregard division, which should stay in its own column
@@ -260,43 +261,43 @@ gpg_core %>%
       # Merge the data with the perc_by_division dataset, which now has a new column 'order' to specify the order of the divisions
       left_join(perc_by_division) 
     
-  }) %>%
-  # Plot the data. Reorder the x-values (SIC division) by the order we just calculated.
-  (function(data) {
-    
-    ## Plot
-    p <- ggplot(data, aes(x=reorder(division,order) , y=avgperc, fill=variable)) +
-      # Bar plot --> statistic to show is just the number
-      geom_bar(stat = "identity") +
-      # Modidify the x-axis s.t. we abbreviate the industry texts (some are very long)
-      scale_x_discrete(label = function(x) abbreviate(x, minlength=20)) +
-      # Set the x-axis labels at an angle and adjust the height
-      theme(axis.text.x = element_text(angle = 45, hjust=1))
-    
-    ## Also print a table with SIC divisions, order, percentage of males, number of companies in that division & percentage
-    knitr::kable(data %>% 
-                   filter(variable == "male") %>% 
-                   select(division, order, avgperc) %>%
-                   mutate(perc_male = round(avgperc, digits = 2)) %>% 
-                   select(-avgperc) %>%
-                   # Join this data with a quick calculation of the number of companies / division
-                   left_join(., gpg_core %>% 
-                               group_by(division) %>% 
-                               summarize(number_companies = n())) %>%
-                   # Add percentages
-                   mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2)) %>%
-                   # Add mean/median difference in income
-                   left_join(., gpg_core %>%
-                               group_by(division) %>%
-                               summarize(avg_mean_diff = round(mean(DiffMeanHourlyPercent), digits=2),
-                                         avg_med_diff = round(mean(DiffMedianHourlyPercent), digits=2)))) %>%
-      # Cat to console
-      print()
-    
-    # Return plot
-    return(p)
-    
   })
+
+# Plot the data. Reorder the x-values (SIC division) by the order we just calculated.
+p <- ggplot(by_sic, aes(x=reorder(division,order) , y=avgperc, fill=variable)) +
+  # Bar plot --> statistic to show is just the number
+  geom_bar(stat = "identity") +
+  # Modidify the x-axis s.t. we abbreviate the industry texts (some are very long)
+  scale_x_discrete(name = "", label = function(x) abbreviate(x, minlength=20)) +
+  # Set the x-axis labels at an angle and adjust the height
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  scale_fill_brewer(palette="Set2", name = "Gender") +
+  # y variable scale name
+  scale_y_continuous(name = "Percentage of males/females",
+                     labels = scales::percent)
+
+p
+
+## Also print a table with SIC divisions, order, percentage of males, number of companies in that division & percentage
+knitr::kable(by_sic %>% 
+               filter(variable == "male") %>% 
+               select(division, order, avgperc) %>%
+               mutate(perc_male = round(avgperc, digits = 2)) %>% 
+               select(-avgperc) %>%
+               # Join this data with a quick calculation of the number of companies / division
+               left_join(., gpg_core %>% 
+                           group_by(division) %>% 
+                           summarize(number_companies = n())) %>%
+               # Add percentages
+               mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2)) %>%
+               # Add mean/median difference in income
+               left_join(., gpg_core %>%
+                           group_by(division) %>%
+                           summarize(avg_mean_diff = round(mean(DiffMeanHourlyPercent), digits=2),
+                                     avg_med_diff = round(mean(DiffMedianHourlyPercent), digits=2)))) %>%
+  # Cat to console
+  print()
 
 ## Look at variance within and between groups 
 

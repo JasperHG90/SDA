@@ -9,7 +9,12 @@ header-includes:
  \usepackage{setspace}
  \doublespacing
  \floatplacement{figure}{H}
+ \usepackage{lscape}
+ \newcommand{\blandscape}{\begin{landscape}}
+ \newcommand{\elandscape}{\end{landscape}}
 bibliography: bib.bib
+nocite: |
+  @UKGOVGPG
 ---
 
 ```{r setup, include=FALSE}
@@ -56,8 +61,6 @@ library(RColorBrewer)
 
 # Introduction
 
-[-@UKGOVGPG] <!-- Don't change this line it ensures that the reference at the bottom shows up! -->
-
 The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs?
 
 This report will focus on the wage gap in the UK in 2017. The data we analyse throughout the report comprise all companies with over 250 employees, and a small amount of smaller companies. As of 2017, it is required by the UK government that all such companies publish information pertaining to the pay of employees for the purpose of showing whether there is indeed a difference in the pay of male and female employees. This dataset is thus well protected against non-response errors, given that failure to comply with the regulations can lead to enforcement from the Equality and Human Rights Commission [1]. In addition, non-sampling errors are also well protected via the use of clear and simple categories, for example, size brackets for the number of employees. 
@@ -71,22 +74,59 @@ Before conducting our analysis, we first made some modifications to the dataset.
 
 Our analysis found that, across the population (of provided data), the average monthly wage for men was 14.4\% higher than that for women. It should be noted that this provides only an initial insight into the extent of the gender gap in the UK, and should be interpreted with caution. For instance, it can often be more relevant to assess the size of gender pay gaps in terms of the median wage, so that the few disproportionately high earners do not skew the results. To improve the accuracy of this 'population' gender gap we should have weighted the population mean based on the size of the companies, so that the larger companies hold more influence on the population statistics. However, with the data provided, it would be difficult to achieve a meaningful accuracy, given that we are not provided with the exact size of the companies. (However we do try see question 8)
 
-```{r, fig.pos="H", fig.cap="Proportion of males against females across the UK"}
-# Number of males/females
-gpg_core %>%
-  # Subset for male / female columns
-  select(male, female) %>%
-  # Reshape the data from male, female column to variable, value columns where variable == female or male and value equals the percentages
-  gather(variable, value) %>%
-  # Plot
-  ggplot(., aes(x = variable, y=value, fill = variable)) +
-    #geom_jitter(alpha=0.2) +
-    geom_boxplot() +
-    theme_bw() +
-    scale_fill_brewer(palette = "Set2") +
-    scale_x_discrete(name = "") +
-    scale_y_continuous("Percentage") +
-    theme(legend.position = "None")
+```{r, fig.pos="H", fig.cap="Proportion of males against females across the UK and SIC division"}
+## SIC divisions
+library(RColorBrewer)
+# Look at percentages male/female by SIC division
+by_sic <- gpg_core %>%
+  # Select male/female/division columns
+  select(male, female, division) %>%
+  # Take columns and reshape to two columns (variable names and values), disregard division, which should stay in its own column
+  gather(variable, value, -division) %>%
+  # Group by division and gender (variable)
+  group_by(division, variable) %>%
+  # Per division and gender group, calculate the average percentage of males/females
+  summarize(avgperc = mean(value)) %>%
+  # Ungroup the data
+  ungroup() %>%
+  # This anonymous function further subsets the data and then merges it with the results up until now
+  (function(data) {
+    
+    # Create an order for the SIC sections (this is useful for the plot below). We are going to order the SIC divisions by the % of males
+    
+    # Save data in temporary variable
+    perc_by_division <- data
+    
+    # Further subset the data
+    data %>%
+      # Filter for males
+      filter(variable == "male") %>%
+      # Order s.t. highest --> lowest
+      arrange(desc(avgperc)) %>%
+      # Add an ordering per SIC division
+      mutate(order = 1:n()) %>%
+      # Remove the variable and percentage columns
+      select(-avgperc, -variable) %>%
+      # Merge the data with the perc_by_division dataset, which now has a new column 'order' to specify the order of the divisions
+      left_join(perc_by_division) 
+    
+  })
+
+# Plot the data. Reorder the x-values (SIC division) by the order we just calculated.
+p <- ggplot(by_sic, aes(x=reorder(division,order) , y=avgperc, fill=variable)) +
+  # Bar plot --> statistic to show is just the number
+  geom_bar(stat = "identity") +
+  # Modidify the x-axis s.t. we abbreviate the industry texts (some are very long)
+  scale_x_discrete(name = "", label = function(x) abbreviate(x, minlength=20)) +
+  # Set the x-axis labels at an angle and adjust the height
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  scale_fill_brewer(palette="Set2", name = "Gender") +
+  # y variable scale name
+  scale_y_continuous(name = "Percentage of males/females",
+                     labels = scales::percent)
+
+p
 ```
 
 
@@ -339,6 +379,8 @@ The PPS sample tells us that there is a 14.24\% difference in the average wage -
 
 However, it is still possible to optimise the sample, via the choice of stratum sample size. This can be done by using a Neyman Allocation. This method allocates an optimal size for each stratum via the formula $\frac{(N_h \cdot V_h)} {\Sigma (N_h \cdot V_h)}$, where $N_h$ and $V_h$ are the stratum sizes and variances respectively. In this way, it is possible to oversample from certain strata - namely those with higher variances - in order to achieve a smaller standard error. According to this sampling design, the gender pay gap stands at 14.05\%. While this underestimates the pay gap slightly more than the PPS sample, the standard error of 0.0037412 is marginally smaller in comparison. This means we now have a smaller, better design effect of 0.8685. Consequently, we consider this design more efficient than the PPS, requiring fewer companies to achieve the same precision. We therefore conclude that, when seeking to maximise precision within a sample of 1000 companies, stratifying based on SIC division and using Neyman's optimal allocation is better than taking an SRS or a PPS stratified sample. Other sampling designs are beyond the scope of this report. 
 
+USE THE MEDIAN
+
 ```{r}
 # proportional-to-size stratified sample for 'division'
 sample_stratum <- stratify(gpg_core, "division", n=1000, seed=400)
@@ -350,7 +392,7 @@ stratdesign_prop <- svydesign(ids=sample_stratum$uuid,
                               data = sample_stratum)
 
 # Calculate the population value & design effect
-stratdesign_mean <- svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)
+(stratdesign_mean <- svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE))
 
 # Use neyman allocation to stratify optimally
 sample_optim <- stratify(gpg_core, 
@@ -358,7 +400,7 @@ sample_optim <- stratify(gpg_core,
                          n=1000, 
                          seed=400,
                          optim=TRUE, 
-                         optimVar = "DiffMeanHourlyPercent")
+                         optimVar = "DiffMedianHourlyPercent")
 
 length_stratum_one <- length(which(sample_optim$Stratum == 1))
 
@@ -370,22 +412,27 @@ stratdesign_optim <- svydesign(ids=sample_optim$uuid,
                          #weights = ~Prob,
                          data = sample_optim)
 
+# Calculate the population value & design effect
+stratdesign_optim_mean <- svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE)
+
 ## Make data frame
 comparedesign <- data.frame(
-  "Mean wage gap estimate" = c(as.numeric(svymean(~DiffMeanHourlyPercent, swordesign)), 
-                               as.numeric(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)), 
-                               as.numeric(svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE))), 
-  "SE" = c(as.numeric(SE(svymean(~DiffMeanHourlyPercent, swordesign))), 
-                       as.numeric(SE(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE))),
-                       as.numeric(SE(svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)))),
-  "Margin of error" = c(as.numeric(SE(svymean(~DiffMeanHourlyPercent, swordesign)))*1.96, 
-                       as.numeric(SE(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)))*1.96,
-                       as.numeric(SE(svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)))*1.96)
-  #"Design Effect" = c(1, )
+  "Median wage gap estimate" = c(as.numeric(svymean(~DiffMedianHourlyPercent, swordesign)), 
+                               as.numeric(svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE)), 
+                               as.numeric(svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE))), 
+  "SE" = c(as.numeric(SE(svymean(~DiffMedianHourlyPercent, swordesign))), 
+                       as.numeric(SE(svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE))),
+                       as.numeric(SE(svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE)))),
+  "Margin of error" = c(as.numeric(SE(svymean(~DiffMedianHourlyPercent, swordesign)))*1.96, 
+                       as.numeric(SE(svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE)))*1.96,
+                       as.numeric(SE(svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE)))*1.96),
+  "Design effect" = c(1,
+                      as.numeric(deff(svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE))), 
+                               as.numeric(deff(svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE))))
 )         
 row.names(comparedesign) <- c("SRS", "PPS", "Optimised")
 knitr::kable(comparedesign, caption = "Gender gap estimates under different sampling designs",
-             col.names = c("Mean wage gap estimate", "SE", "Margin of error"))
+             col.names = c("Median wage gap estimate", "SE", "Margin of error", "DEFF"))
 ```
 
 # Sample size determination based on the coefficient of variation
@@ -421,5 +468,36 @@ Another variable on which to stratify is EmployerSize. The data are already prov
 Given that the premise of stratified samples is to increase the precision/ lower the SE, this sample has not performed its desired function. Therefore, it was necessary for us to implement an optimal allocation strategy, so that each size division is more apporopriately represented in the sample. It is of interest to take a larger sample from strata in which there is more variation. For this, we (attempted to use) used the Neyman Allocation. ... 
 
 The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs? 
+
+\newpage
+\blandscape
+
+# APPENDIX I
+
+```{r, echo=FALSE}
+## Also print a table with SIC divisions, order, percentage of males, number of companies in that division & percentage
+knitr::kable(by_sic %>% 
+               filter(variable == "male") %>% 
+               select(division, order, avgperc) %>%
+               mutate(perc_male = round(avgperc, digits = 2)) %>% 
+               select(-avgperc) %>%
+               # Join this data with a quick calculation of the number of companies / division
+               left_join(., gpg_core %>% 
+                           group_by(division) %>% 
+                           summarize(number_companies = n())) %>%
+               # Add percentages
+               mutate(companies_perc = round(number_companies / sum(number_companies), digits = 2)) %>%
+               # Add mean/median difference in income
+               left_join(., gpg_core %>%
+                           group_by(division) %>%
+                           summarize(avg_mean_diff = round(mean(DiffMeanHourlyPercent), digits=2),
+                                     avg_med_diff = round(mean(DiffMedianHourlyPercent), digits=2))) %>%
+               mutate(division = abbreviate(division, 30)) %>%
+               select(-order),
+             col.names = c("SIC division", "Perc. Male",  "#Companies", "Perc. Companies", "Avg. Mean PG", "Avg. Median PG"),
+             caption = "Gender distribution and mean and median gender gaps by SIC division") 
+```
+
+\elandscape
 
 # References
