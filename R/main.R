@@ -385,12 +385,12 @@ summary(as.factor(gpg_core$division))
 # 7.How large should the sample be to achieve a CV of 0.01 for the size of the gender pay gap in the mean income?
 # proportional-to-size stratified sample for 'division'
 cv(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE))
-# CV = 0.0264
+# CV = 0.0261
 
 # neyman allocation to stratify optimally
 ## this approach will occur problem of "not enough members in group", so I use the division as stratification
 cv(svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE))
-# CV = 0.026
+# CV = 0.0285
 
 # To decrease CV, we incerase n until CV < 0.01
 for (i in 1001:6707){
@@ -406,10 +406,31 @@ for (i in 1001:6707){
 
 i  ## 3919 is the smallest n which make CV < 0.01
 
+svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)
+SE = 0.0037575
+Ybar = 0.1441252
+S2 = (991*SE^2)/(1-991/6713)
+nprime = (S2/Ybar^2)/(0.01^2)
+n = nprime/((nprime/6713)+1)
+# n > 3629.658
+
+svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)
+SE.op = 0.0040662
+Ybar.op = 0.1424867
+S2.op = (992*SE.op^2)/(1-992/6713)
+nprime.op = (S2.op/Ybar.op^2)/(0.01^2)
+n.op = nprime.op/((nprime.op/6713)+1)
+# n > 3929.959
+
 # 8.weight the data according to the size of the company
 # We use the middle number of each group as weight. Except the largest one (20,000 or more) as 20,000 and smallest one as 0
 Weight <- c(0, 250/2, (250+499)/2, (500+999)/2, (1000+4999)/2, (5000+19999)/2, 20000)
 clustermean <- tapply(gpg_core$DiffMeanHourlyPercent,gpg_core$EmployerSize,mean)
 weighted.mean(clustermean,Weight)
+# From individual perspective, the pay gap for mean is 0.1560
 
-# From individual perspective, the pay gap is 0.16.
+clustermedian <-tapply(gpg_core$DiffMedianHourlyPercent,gpg_core$EmployerSize,mean)
+weighted.mean(clustermedian,Weight)
+# The pay gap for median is 0.1040
+
+
