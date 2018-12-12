@@ -1,56 +1,44 @@
-## Dev code for real analysis
-
-## For sic division
+library(dplyr)
 order <- gpg_core %>%
-  group_by(division) %>%
-  summarize(iqr = IQR(DiffMedianHourlyPercent)) %>%
-  arrange(desc(iqr)) %>%
+  group_by(county) %>%
+  tally() %>%
+  arrange(desc(n)) %>%
   mutate(order = 1:n())
-order
 
+# Data
+gpg_core2 <- gpg_core %>% 
+  left_join(order, by="county") %>%
+  # Remove NA values
+  na.omit() %>%
+  # Filter for these values
+  filter(abs(DiffMedianHourlyPercent) <= 1,
+         n > cutoff)
+
+# Filter companies at this cutoff
+cutoff <- 20
 library(ggplot2)
-ggplot(gpg_core %>% left_join(order, by="division"), aes(x=reorder(abbreviate(as.factor(division), 20), order), 
-                                                         y=DiffMedianHourlyPercent)) +
-  geom_jitter(aes(color=gpg_core$division)) +
-  geom_boxplot(width=0.2,
-               outlier.shape = NA) +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.position = "None")
+ggplot(gpg_core2, 
+        aes(x=reorder(county, order), y = DiffMedianHourlyPercent, color=county)) +
+          labs(caption=paste0("\nNB. Only counties with more than ", cutoff, 
+                              " observations are considered.\n", nrow(gpg_core) - nrow(gpg_core2), 
+                              " companies are not included due to missing data")) +
+          geom_jitter(alpha=0.5) +
+          geom_boxplot(width=0.4) +
+          theme_bw() +
+          theme(legend.position = "None") +
+          scale_x_discrete(name = "County, ordered by size") +
+          theme(axis.text.x = element_blank(),
+                axis.ticks.x = element_blank())
 
-## For company size
-order <- gpg_core %>%
-  group_by(EmployerSize) %>%
-  summarize(iqr = IQR(DiffMedianHourlyPercent)) %>%
-  arrange(desc(iqr)) %>%
-  mutate(order = 1:n())
-order
+# proportional-to-size stratified sample for 'division'
+sample_stratum <- stratify(gpg_core, "london", n=1000, seed=400)
 
-library(ggplot2)
-ggplot(gpg_core %>% left_join(order, by="EmployerSize"), aes(x=reorder(EmployerSize, order), 
-                                                             y=DiffMedianHourlyPercent)) +
-  geom_jitter(aes(color=gpg_core$EmployerSize)) +
-  geom_boxplot(width=0.2,
-               outlier.shape = NA) +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1),
-        legend.position = "None") +
-  scale_x_discrete("Employer Size")
+# Surveydesign for stratified sample
+stratdesign_prop <- svydesign(ids=sample_stratum$uuid, 
+                              fpc=~fpc, 
+                              strata = ~Stratum,
+                              data = sample_stratum)
 
-calc_weight <- function(x) {
-  
-  switch(
-    x,
-    "Not Provided" = 0,
-    "Less than 250" = 250 / 2,
-    "250 to 499" = 375,
-    "500 to 999" = 750,
-    "1000 to 4999" = 3000,
-    "5000 to 19,999" = 12500,
-    "20,000 or more" = 20000
-  )
-  
-}
 
-gpg_core <- gpg_core %>%
-  mutate(weight = sapply(as.character(gpg_core$EmployerSize), calc_weight))
+# Calculate the population value & design effect
+svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE)
