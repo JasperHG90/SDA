@@ -64,15 +64,34 @@ library(RColorBrewer)
 The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs?
 
 This report will focus on the wage gap in the UK in 2017. The data we analyse throughout the report comprise all companies with over 250 employees, and a small amount of smaller companies. As of 2017, it is required by the UK government that all such companies publish information pertaining to the pay of employees for the purpose of showing whether there is indeed a difference in the pay of male and female employees. This dataset is thus well protected against non-response errors, given that failure to comply with the regulations can lead to enforcement from the Equality and Human Rights Commission [1]. In addition, non-sampling errors are also well protected via the use of clear and simple categories, for example, size brackets for the number of employees. 
+
 Our aim is to create an efficient sampling design, from which we can make accurate calculations by using a smaller sample. We will compare the precision of a number of different such designs. Their accuracy will be measured against the results obtained from the complete data analysis. 
 
-One element of the data which we will refer to throughout this report is the Standard Industrial Classification (SIC). This is a widely used system for classifying companies into certain larger industries. Another important variable in the data is the size of an employer ("EmployerSize"), which categorises each company into seven distinct sizes: size not provided, less than 250, 250 to 499, 500 to 999, 1000 to 4999, 5000 to 19,999, and 20,000 or more. We will discuss in detail whether using information on the gender pay gap within these categories can lead to better sampling designs. 
+One element of the data which we will refer to throughout this report is the Standard Industrial Classification (SIC). This is a widely used system for classifying companies into certain larger industries. Another important variable in the data is the size of an employer, ("$\textit{EmployerSize}$"), which categorises each company into seven distinct sizes: size not provided, less than $250$, $250$ to $499$, $500$ to $999$, $1000$ to $4999$, $5000$ to $19.999$, and $20.000$ or more. We will discuss in detail whether using information on the gender pay gap within these categories can lead to better sampling designs. 
 
-Before conducting our analysis, we first made some modifications to the dataset. Firstly, the information that was not necessary was stored in a separate dataframe, which we did not use. For example, the person responsible for the submission of the data was not relevant, and was thus not included in our main dataset. For our analysis, 6 companies were removed, for reasons explained further in the sampling section. We thus finally performed our analyses on the dataset with 6707 companies. 
+Before conducting our analysis, we first made some modifications to the dataset. Firstly, the information that was not necessary was stored in a separate dataframe, which we did not use. For example, the person responsible for the submission of the data was not relevant, and was thus not included in our main dataset. Six companies were then reclassified into different SIC divisions. Said observations fell under the divisions $\textit{activities of extraterritorial organisations and bodies}$ and $\textit{activities of households as employers}$. The first reason for the reclassification was that, with just three companies each, these divisions would be too small to stratify. More importantly, however, information from the websites of said companies led to to their fitting in other SIC divisions. With this modified dataset of $6713$ companies we proceeded with our analysis. 
 
 # Population data analysis
 
-Our analysis found that, across the population (of provided data), the average monthly wage for men was 14.4\% higher than that for women. It should be noted that this provides only an initial insight into the extent of the gender gap in the UK, and should be interpreted with caution. For instance, it can often be more relevant to assess the size of gender pay gaps in terms of the median wage, so that the few disproportionately high earners do not skew the results. To improve the accuracy of this 'population' gender gap we should have weighted the population mean based on the size of the companies, so that the larger companies hold more influence on the population statistics. However, with the data provided, it would be difficult to achieve a meaningful accuracy, given that we are not provided with the exact size of the companies. (However we do try see question 8)
+Our analysis found that, across the population (of provided data), the average monthly wage for men was 14.4\% higher than that for women. It should be noted that this provides only an initial insight into the extent of the gender gap in the UK, and should be interpreted with caution. For instance, it can often be more relevant to assess the size of gender pay gaps in terms of the median wage, so that the few disproportionately high earners do not skew the results. To improve the accuracy of this 'population' gender gap we should have weighted the population mean based on the size of the companies, so that the larger companies hold more influence on the population statistics. However, with the data provided, it would be difficult to achieve a meaningful accuracy, given that we are not provided with the exact size of the companies.
+
+```{r, fig.pos="H", fig.align="center", fig.cap="Density of different male-female employee proportions"}
+gpg_core %>%
+  # Subset for male / female columns
+  select(male, female) %>%
+  # Reshape the data from male, female column to variable, value columns where variable == female or male and value equals the percentages
+  gather(variable, value) %>%
+  # Plot
+  ggplot(., aes(x = value, fill = variable)) +
+    geom_density(alpha=0.25) +
+    theme_bw() +
+    scale_fill_brewer(palette = "Set2",
+                      name = "Gender") +
+    scale_x_continuous(name = "") +
+    scale_y_continuous(name = "Density")
+```
+
+Figure 1 gives us an early impression of the distribution of male and female workers within companies. We can clearly see that there are many more companies in which there are fewer female employees, with female employment proportion peaking at ~22\% and 50\%. The graph shows proportions, thus male employment peaks at ~78\% and 50\%. This is an interesting finding, which would well have implications on the size of the gender pay gap. We now seek to determine whether this holds across all sectors. Figure 2 shows a great deal of variation within sectors, in terms of the proportion of male and female employees. This marks SIC division as a potential variable upon which to stratify when taking a sample.^[See the section on sampling methods below.] 
 
 ```{r, fig.pos="H", fig.cap="Proportion of males against females across the UK and SIC division"}
 ## SIC divisions
@@ -129,11 +148,10 @@ p <- ggplot(by_sic, aes(x=reorder(division,order) , y=avgperc, fill=variable)) +
 p
 ```
 
-
 A brief analysis into the prevalence of the gender gap, namely in how many companies there exists a disparity in wages based on gender, revealed the following:
-749, or 11.17\%, of the companies in the dataset exhibited a gender gap (in the average hourly rate) favouring women, whereas 5904 companies, or 88.03\%, paid men a higher average wage. (The remaining 0.008\% of companies exhibited no gender wage gap). This indicates that many of the industry-wide differences in pay are likely to favour men. These figures are accompanied by the histogram (Figure 2), showing a heavy skew towards a 'positive' pay gap. Recall that a positive pay gap represents one in which males receive a higher wage than females.
+749, or 11.15\%, of the companies in the dataset exhibited a gender gap (in the average hourly rate) favouring women, whereas 5910 companies, or 88.03\%, paid men a higher average wage. (The remaining 0.008\% of companies exhibited no gender wage gap). This indicates that many of the industry-wide differences in pay are likely to favour men. These figures are accompanied by the histogram (Left hand side: Figure 3), showing a heavy skew towards a 'positive' pay gap. Recall that a positive pay gap represents one in which males receive a higher wage than females.
 
-``` {r, fig.cap="A histogram of the frequency of different sized mean pay gaps", fig.align="center", fig.show="hold", fig.width=3, fig.height=3}
+``` {r, fig.cap="Histograms of the frequency of different sized mean and median pay gaps", fig.align="center", fig.show="hold", fig.width=3, fig.height=3}
 ggplot(gpg_core, aes(x=DiffMeanHourlyPercent)) +
   geom_histogram(color="black", fill = brewer.pal(1, "Set2")[1]) +
   scale_x_continuous(name = "Size of the mean pay gap",
@@ -147,10 +165,23 @@ ggplot(gpg_core, aes(x=DiffMedianHourlyPercent)) +
   theme_bw()
 ```
 
-The gender pay gap in the UK is also evident in the distribution of bonus payments; defined as any payment additional to an employee's salary. The gender gap for bonus payments stands at 14.1\% at the UK population level, again in favour of men. As previously, this statistic falls short of a true population average, owing to the lack of appropriate weighting. However, for the purpose of brevity, these will be referred to herein as the true population values. As previously mentioned, comparing the median (hourly) wage within a company can also be an effective way to study the gender pay gap. Therefore, by averaging the median wage across all UK companies, we found that the median male employee earns 12.2\% more than his female counterpart. 
+```{r, eval=FALSE}
+# Look at mean/median bonus
+meanb <- mean(gpg_core$DiffMeanBonusPercent)
+medb <- mean(gpg_core$DiffMedianBonusPercent)
+
+var(gpg_core$DiffMedianBonusPercent)
+var(gpg_core$DiffMeanBonusPercent)
+
+# One outlier of -1200 >.<
+tr <- gpg_core %>% filter(abs(DiffMedianBonusPercent) <= 1) %>% select(DiffMedianBonusPercent)
+medmean <- mean(tr$DiffMedianBonusPercent)
+```
+
+The gender pay gap in the UK is also evident in the distribution of bonus payments; defined as any payment additional to an employee's salary. The gender gap for bonus payments stands at 14.1\% at the UK population level, again in favour of men. The median value for bonus payments stands at 17.3\% after correcting for a single unplausible outlier. As previously, this statistic falls short of a true population average, owing to the lack of appropriate weighting. However, for the purpose of brevity, these will be referred to herein as the true population values. As previously mentioned, comparing the median (hourly) wage within a company can also be an effective way to study the gender pay gap. Therefore, by averaging the median wage across all UK companies, we found that the median male employee earns 12.2\% more than his female counterpart. 
 
 A glance at the distribution of both positive and negative wage inequalities again proves interesting:
-902, or 13.45\%, of UK companies pay a higher median wage to women in comparison to men - a significantly smaller figure than the 5257 companies, or 78.38\%, who provide a higher median wage to males. (The remaining 548 companies, or 8.22\%, provide an equal median wage). Similarly to the analysis of the mean wage, we can see from the histogram (Figure 3) that the distribution is strongly skewed in favour of higher male income. 
+903, or 13.45\%, of UK companies pay a higher median wage to women in comparison to men - a significantly smaller figure than the 5258 companies, or 78.32\%, who provide a higher median wage to males. (The remaining 552 companies, or 8.22\%, provide an equal median wage). Similarly to the analysis of the mean wage, we can see from the histogram (Right hand side: Figure 3) that the distribution is strongly skewed in favour of higher male income. 
 
 Using the data on the gender of employees working within each income quartile (herein referred to as lower, lower middle, upper middle, top), we were able to get a sense of the distribution of employees at the company level. For example Figure 4 shows that a higher concentration of women currently work in the lower quartile, while male employees dominate the top and upper middle quartiles. This is likely to be one of the driving factors behind the 14.4\% nation-wide pay inequality. However, in order to further this analysis, we would require data pertaining to the size of the gender pay gap within each income quartile. For example, we know that males dominate the top quartile - and females the lower quartile - but we do not know in which quartile is the pay gap more pronounced. 
 
@@ -180,8 +211,9 @@ gpg_core %>%
   
 ```
 
-#Sampling methods
-The focus of this report largely falls on sampling methods, with the aim of making inferences on the target population using a (smaller) designed sample. The target population for our sampling was the UK working population; the goal of assessing the gender wage gap was to do so in the context of its widespread presence in the entire population. In the current situation, whereby companies with over 250 employees are required to provide relevant data, we worked with a dataset containing 6707 companies. The sample size in mind when conducting the following sample analyses will be 1000. Thus, we endeavour to make calculations related to the gender pay gap on such a sample which accurately reflect the UK population. 
+# Sampling methods
+
+The focus of this report largely falls on sampling methods, with the aim of making inferences on the target population using a (smaller) designed sample. The target population for our sampling was the UK working population; the goal of assessing the gender wage gap was to do so in the context of its widespread presence in the entire population. In the current situation, whereby companies with over 250 employees are required to provide relevant data, we worked with a dataset containing 6713 companies. The sample size in mind when conducting the following sample analyses was 1000. Thus, we endeavoured to make calculations related to the gender pay gap on such a sample which accurately reflect the UK population. 
 
 ```{r}
 library(survey)
@@ -197,7 +229,7 @@ N <- nrow(gpg_core)
 n <- 1000
 
 # Take SRS 
-set.seed(400)
+set.seed(402)
 samp <- srswor(n, N)
 
 # Subset data
@@ -211,14 +243,17 @@ swordesign <- svydesign(ids=sample$uuid, fpc=~fpc, data = sample)
 # Size of gender pay gap for mean and median pay
 srs_mean <- svymean(~DiffMeanHourlyPercent + DiffMedianHourlyPercent, swordesign)
 
+## Save SE
+srs_se <- survey::SE(srs_mean)
+
 ## Save the margin of error in R object
 marginerror <- survey::SE(srs_mean)*1.96
 
 ```
 
-Firstly, we opted to generate a sample of 1000 random companies out of the 6707 available, with each company given an equal probability of being sampled (1000 / 6707 = 14.9\%). This method is known as a simple random sample (SRS), and requires the assumption that a random sample is representative of the target population. The sample is taken without replacement, i.e. no company can be included more than once in the sample. 
+Firstly, we opted to generate a sample of 1000 random companies out of the 6713 available, with each company given an equal probability of being sampled (1000 / 6713 = 14.9\%). This method is known as a simple random sample (SRS), and requires the assumption that a random sample is representative of the target population. The sample is taken without replacement, meaning that no company can be included more than once in the sample. 
 
-Working with this SRS of 1000 companies, we found that the gender pay gap stands at `r round(unname(srs_mean[2]), 4)*100` \% and `r round(unname(srs_mean[1]), 4)*100` \% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2\% and 14.4\%. 95\% confidence intervals for these percentages show little variation from our original population values, with the population values falling within the 95 \% CI for both metrics, shown in the table below.
+Working with this SRS of 1000 companies, we found that the gender pay gap stands at `r round(unname(srs_mean[2]), 4)*100` \% and `r round(unname(srs_mean[1]), 4)*100` \% when assessing the median and mean wage, respectively. Both of these pay gaps are in favour of men. These values do not differ drastically from the population values of 12.2\% and 14.4\%. 95\% confidence intervals for these percentages show little variation from our original population values, with the population values falling within the 95 \% CI for both metrics (Table 1, below). 
 
 ```{r}
 CI <- data.frame(
@@ -232,7 +267,12 @@ knitr::kable(CI, caption = "Lower and upper CI for the SRS design",
              col.names = c("Lower CI", "Upper CI"))
 ```
 
-The standard error for the estimate for the difference in mean hourly wage using the SRS is 0.0041. Using this sampling design, we achieve a margin of error of  0.0041*1.96 = 0.8\% at the 5\% level. This relates to the sampling error - the difference between the sampled statistic and the population statistic is just 0.8\%. We will use this SRS as a reference to compare all future sampling designs against, with the aim of creating a sampling design with a small standard error - this will indicate a small sampling error. These comparisons will be done via the design effect $\frac{Variance_{design}}{Variance_{SRS}}$. 
+The standard error for the estimate for the difference in mean hourly wage using the SRS is 0.0040. Using this sampling design, we achieve a margin of error of  $0.0040 \cdot1.96 = 0.78\%$ at the 5\% level. This relates to the sampling error - the difference between the sampled statistic and the population statistic is just 0.78\%. We will use this SRS as a reference to compare all future sampling designs against, with the aim of creating a sampling design with a small standard error - this will indicate a small sampling error. These comparisons will be done via the design effect
+
+$$
+\tag{1}
+deff = \frac{Variance_{design}}{Variance_{SRS}}
+$$ 
 
 When the statistic of interest (here, gender wage inequality) is known to correlate in some way with information provided in the sampling frame, it can be useful to stratify. Arranging the data into strata prior to sampling can optimise the sampling design in the sense that the standard error of the 'predictions' can be reduced, thus improving the precision. This will only be the case if we see small variance within the strata, and larger variance between the strata. This will make for a more efficient design for the reason that, if a large portion of the total variance is between the strata, only a small sample from each stratum will be necessary to make accurate predictions. 
 
@@ -284,7 +324,7 @@ ggplot(tmp,
   scale_color_brewer(palette = "Set2")
 ```
 
-Based on rudimentary analysis of the two potential stratification variables SIC and EmployerSize, and with the sample of 1000 still the goal, we decided to stratify based on SIC division. Evidence supporting this decision is provided in Figure 5: violin plots of the strata. From these plots we can clearly rule out EmployerSize as a useful stratification variable given the great variation in wage difference within each employer size category. Additionally, post-hoc tests following an ANOVA on the different categories of EmployerSize revealed very little evidence of between-group differences (only one of the 21 pairwise comparisons showed a significant difference). On the contrary, running an ANOVA on the SIC divisions yielded many significant pairwise differences in the median pay gap. 
+Based on rudimentary analysis of the two potential stratification variables SIC and $\textit{EmployerSize}$, and with the sample of 1000 still the goal, we decided to stratify based on SIC division. Evidence supporting this decision is provided in Figure 5: boxplots of the mean and median gender pay gap for the strata, here $\textit{EmployerSize}$. From these plots, we do not see a great deal of variation between different company sizes, which suggests that $\textit{EmployerSize}$ may not be a particularly useful variable on which to stratify. Additionally, post-hoc tests following an ANOVA on the different categories of $\textit{EmployerSize}$ revealed very little evidence of between-group differences (only one of the 21 pairwise comparisons showed a significant difference). On the contrary, running an ANOVA on the SIC divisions yielded many significant pairwise differences in the median pay gap. Figure 6 also shows that there is significant variation in the pay gap within SIC divisions.^[We briefly considered geographic location as another potential stratification variable. In particular, we expected London to exhibit a different profile from the rest of the UK. A preliminary analysis for which we extracted the counties of some $4.500$ companies did not show any difference between counties and therefore the idea was abandoned.] 
 
 ```{r, "ANOVAS", include=FALSE, echo=FALSE, eval=FALSE} 
 
@@ -368,22 +408,13 @@ ggplot(tmp,
   scale_y_continuous(name = "Difference in Mean \nHourly Pay") 
 ```
 
-SIC division was identified as a more useful stratification variable. However, there was yet an obvious problem in that two of the divisions comprise just three companies each: activities of extraterritorial organisations and bodies, and activities of households as employers. We excluded these two divisions for the following reasons:
-1. They comprise just 6 companies, making it difficult to sample in a representative way.
-2. They contain less than 0.09% of population.
-3. The divisions themselves have unique, specific characteristics. Therefore, it is not possible to combine them with other divisions in a meaningful way.  
-
 We then used a proportional-to-size (PPS) procedure to draw a stratified sample of (at most) 1000 companies. This technique ensures that the drawn sample well represents the population, given that the proportions of the divisions within the sample match those within the population. For example, the division $\textit{education}$ contains 986 companies, or 14.69\% of the population. Within the PPS sample, education will comprise as close to this figure as possible. This method of sampling should ensure lower sampling errors, when comparing with an SRS. This is because a PPS stratified sample is expected to better represent the target population (in this case all UK companies with over 250 employees). 
 
-The PPS sample tells us that there is a 14.24\% difference in the average wage - closer to the population value (14.4\%) than the SRS (15.02%). The margin of error here is 0.74\% (standard error = 0.0037645), which gives a sense of how far our predictions of the wage difference differ from the population values. This is calculated by 1.96*(s.e.), where 1.96 is the 95\% z-value used to construct confidence intervals. The margin of error is, as expected, slightly lower than that of the SRS (0.8\%). The design effect of 0.8771 means a sample of only 877 would be required to achieve the same precision as our earlier SRS. These figures indicate that we can more efficiently (design effect) and accurately (margin of error) make inferences on the population with this sampling design. 
-
-However, it is still possible to optimise the sample, via the choice of stratum sample size. This can be done by using a Neyman Allocation. This method allocates an optimal size for each stratum via the formula $\frac{(N_h \cdot V_h)} {\Sigma (N_h \cdot V_h)}$, where $N_h$ and $V_h$ are the stratum sizes and variances respectively. In this way, it is possible to oversample from certain strata - namely those with higher variances - in order to achieve a smaller standard error. According to this sampling design, the gender pay gap stands at 14.05\%. While this underestimates the pay gap slightly more than the PPS sample, the standard error of 0.0037412 is marginally smaller in comparison. This means we now have a smaller, better design effect of 0.8685. Consequently, we consider this design more efficient than the PPS, requiring fewer companies to achieve the same precision. We therefore conclude that, when seeking to maximise precision within a sample of 1000 companies, stratifying based on SIC division and using Neyman's optimal allocation is better than taking an SRS or a PPS stratified sample. Other sampling designs are beyond the scope of this report. 
-
-USE THE MEDIAN
+Given that is often more useful to use the median to gauge the size of the pay gap, we will now proceed by comparing the predicted difference in median wage of our sampling designs. 
 
 ```{r}
 # proportional-to-size stratified sample for 'division'
-sample_stratum <- stratify(gpg_core, "division", n=1000, seed=400)
+sample_stratum <- stratify(gpg_core, "division", n=1000, seed=402)
 
 # Surveydesign for stratified sample
 stratdesign_prop <- svydesign(ids=sample_stratum$uuid, 
@@ -392,13 +423,35 @@ stratdesign_prop <- svydesign(ids=sample_stratum$uuid,
                               data = sample_stratum)
 
 # Calculate the population value & design effect
-(stratdesign_mean <- svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE))
+stratdesign_mean <- svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE)
+
+# For mean
+stratdesign_med <- svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE)
+
+# Save stats
+spm <- round(as.numeric(stratdesign_mean), digits=4)
+spse <- round(as.numeric(SE(stratdesign_mean)), digits=6)
+spsemoe <- round(spse * 1.96, digits=6)
+spdeff <- round(as.numeric(deff(stratdesign_mean)), digits=4)
+
+# Save stats
+spmm <- round(as.numeric(stratdesign_med), digits=4)
+spsem <- round(as.numeric(SE(stratdesign_med)), digits=6)
+spsemoem <- round(spsem * 1.96, digits=6)
+spdeffm <- round(as.numeric(deff(stratdesign_med)), digits=4)
+```
+
+The PPS sample tells us that there is a `r spm * 100`\% difference in the median wage. This is closer to the population value (12.2\%) than the SRS (12.4\%), and the margin of error here is lower, at `r spsemoe * 100`\% (standard error = `r spse`). This gives a sense of how far our predictions of the wage difference differ from the population values. This is calculated by $1.96\cdot(s.e.)$, where 1.96 is the 95\% z-value used to construct confidence intervals. The design effect of `r spdeff` means a sample of only `r ceiling(1000 * spdeff)` would be required to achieve the same precision as our earlier SRS. These figures indicate that we can more efficiently (design effect) and accurately (margin of error) make inferences on the population with this sampling design. All values referred to here can be found in Table 2.
+
+```{r}
+
+## MEDIAN
 
 # Use neyman allocation to stratify optimally
 sample_optim <- stratify(gpg_core, 
                          "division", 
                          n=1000, 
-                         seed=400,
+                         seed=402,
                          optim=TRUE, 
                          optimVar = "DiffMedianHourlyPercent")
 
@@ -413,66 +466,189 @@ stratdesign_optim <- svydesign(ids=sample_optim$uuid,
                          data = sample_optim)
 
 # Calculate the population value & design effect
-stratdesign_optim_mean <- svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE)
+stratdesign_optim_mean_medpg <- svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE)
 
+# Save values
+som <- round(as.numeric(stratdesign_optim_mean_medpg), digits=4)
+sose <- round(as.numeric(SE(stratdesign_optim_mean_medpg)), digits=6)
+sosemoe <- round(sose * 1.96, digits=6)
+sodeff <- round(as.numeric(deff(stratdesign_optim_mean_medpg)), digits=4)
+
+## MEAN
+
+# Use neyman allocation to stratify optimally
+sample_optim <- stratify(gpg_core, 
+                         "division", 
+                         n=1000, 
+                         seed=402,
+                         optim=TRUE, 
+                         optimVar = "DiffMeanHourlyPercent")
+
+length_stratum_one <- length(which(sample_optim$Stratum == 1))
+
+# Surveydesign for stratified sample
+sample_optim$Prob <- 1 / sample_optim$Prob
+stratdesign_optim <- svydesign(ids=sample_optim$uuid, 
+                         fpc=~fpc, 
+                         strata = ~Stratum,
+                         #weights = ~Prob,
+                         data = sample_optim)
+
+# Calculate the population value & design effect
+stratdesign_optim_mean_meanpg <- svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE)
+
+# Save values
+som_mpg <- round(as.numeric(stratdesign_optim_mean_meanpg), digits=4)
+sose_mpg <- round(as.numeric(SE(stratdesign_optim_mean_meanpg)), digits=6)
+sosemoe_mpg <- round(sose_mpg * 1.96, digits=6)
+sodeff_mpg <- round(as.numeric(deff(stratdesign_optim_mean_meanpg)), digits=4)
+```
+
+However, it is still possible to optimise the sample, via the choice of stratum sample size. This can be done by using a Neyman Allocation. This method allocates an optimal size for each stratum via the formula 
+
+$$
+\tag{2}
+n_h, Neyman = \frac{(N_h \cdot V_h)} {\sum_{i=1}^H (N_i \cdot V_i)} \cdot n
+$$
+
+where $N_h$ and $V_h$ are the population stratum sizes and variances respectively and $n$ is the desired sample size. In this way, it is possible to oversample from certain strata - namely those with higher variances - in order to achieve a smaller standard error. According to this sampling design, the difference in median pay stands at `r som * 100`\%. This value is about as close to the population value (12.2\%) as the PPS sample. The standard error of `r sose` is also marginally lower in comparison. This means we now have a design effect of `r sodeff` and that we need a sample size of `r ceiling(1000 * sodeff)` to achieve comparable performance with this design when compared to an SRS. Consequently, we consider this design more efficient than the PPS, requiring fewer companies to achieve the same precision. We therefore conclude that, when seeking to maximise precision within a sample of 1000 companies, stratifying based on SIC division and using Neyman optimal allocation is better than taking an SRS or a PPS stratified sample, although it should be noted that all three designs are efficient.  
+
+```{r}
 ## Make data frame
 comparedesign <- data.frame(
-  "Median wage gap estimate" = c(as.numeric(svymean(~DiffMedianHourlyPercent, swordesign)), 
-                               as.numeric(svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE)), 
-                               as.numeric(svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE))), 
-  "SE" = c(as.numeric(SE(svymean(~DiffMedianHourlyPercent, swordesign))), 
-                       as.numeric(SE(svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE))),
-                       as.numeric(SE(svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE)))),
-  "Margin of error" = c(as.numeric(SE(svymean(~DiffMedianHourlyPercent, swordesign)))*1.96, 
-                       as.numeric(SE(svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE)))*1.96,
-                       as.numeric(SE(svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE)))*1.96),
-  "Design effect" = c(1,
-                      as.numeric(deff(svymean(~DiffMedianHourlyPercent, design=stratdesign_prop, deff=TRUE))), 
-                               as.numeric(deff(svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE))))
-)         
-row.names(comparedesign) <- c("SRS", "PPS", "Optimised")
-knitr::kable(comparedesign, caption = "Gender gap estimates under different sampling designs",
-             col.names = c("Median wage gap estimate", "SE", "Margin of error", "DEFF"))
+  "Metric" = c(rep("Median", 3), rep("Mean", 3)),
+  "Design" = c("SRS", "PPS", "Neyman", "SRS", "PPS", "Neyman"),
+  "Estimate" = c(as.numeric(srs_mean[2]), spm,som, as.numeric(srs_mean[1]), spmm, som_mpg),
+  "SE" = c(srs_se[2], spse, sose, srs_se[1] ,spsem,sose_mpg),
+  "MOE" = c(marginerror[2], spsemoe, sosemoe, marginerror[1], spsemoem,sosemoe_mpg),
+  "Deff" = c(1, spdeff, sodeff,1, spdeffm, sodeff_mpg)
+)
+knitr::kable(comparedesign,caption="Comparison of sampling designs.",
+             col.names = c("PG Metric", "Design", "Estimate", "SE", "MOE", "Deff"))
 ```
 
 # Sample size determination based on the coefficient of variation
 
-Another common way in which to sample is to base the sample size around a prerequired level of precision. In this situation, the precision of the sample estimates dictates the sample size, as opposed to a fixed budget or sample size. With this technique in mind, we aim to find the sample size required in order to achieve a coefficient of variation of 0.01. The coefficient of variation (CV) is defined as the standard error of the wage gap, relative to the size of the wage gap - a standardised error term.
+``` {r}
+cv_prop <- cv(svymean(~DiffMeanHourlyPercent, design=stratdesign_prop, deff=TRUE))
+# CV = 0.0261
 
-Firstly, we calculated the existing CV, taken from the optimised stratified sample, to be 0.026. This is significantly higher than the target of 0.01. In order to calculate the optimal sample size in this situation, we can systematically increase the sample size, n, until the CV falls at or below the target of 0.01. This algorithm is implemented in R by the use of for loops and if statements. By doing so, we find that a sample of 3919 is sufficient. Therefore, with a level of precision as determined by a CV of 0.01, it would be necessary only to sample 58\% of UK companies with over 250 employees, while still obtaining the same information. 
+# neyman allocation to stratify optimally
+## this approach will occur problem of "not enough members in group", so I use the division as stratification
+cv_optim <- cv(svymean(~DiffMeanHourlyPercent, design=stratdesign_optim, deff=TRUE))
+# CV = 0.0285
 
-It is also of great interest to sample at the level of the individual employee, rather than at the company level. This can be done with a cluster sampling design. This method requires the weighting of the data according to the size of the company. In absence of the exact company size data, we opted to use the midpoints of the size categories as surrogate company sizes. The largest size category was an exception; we used the value of 20,000 to weight these companies. Companies not providing the number of employees were weighted as 0, and thus excluded from this analysis. Using this sampling design, we found that a weighted average for the gender pay gap stands at 16\%, in favour of men. 
+## Calculate statistics for manual sample size and CV of 0.01
 
-################ Discuss potential non-sampling, sampling, and non-response errors.
-#8.	Another way to think about sampling is not at the company level, but at the level of the individual. Unequal pay at very large companies of course has a larger impact than at small companies. We lack data for companies with <250 employees, but could still weight the data according to the size of the company to inspect the gender pay gap for individuals in the UK who work at companies with > 250 employees.
+# PPS
+CV <- 0.01
+N <- nrow(gpg_core)
+n <- nrow(sample_stratum)
+# mean and SE
+svym_strat_prop <- svymean(~DiffMeanHourlyPercent, design=stratdesign_prop)
+Ybar = as.numeric(svym_strat_prop)
+se_prop <- as.numeric(SE(svym_strat_prop))
+# Var
+S2 = (n*se_prop^2)/(1-n/N)
+nprime = (S2/Ybar^2)/(CV^2)
+n_pps = nprime/((nprime/N)+1)
+# n > 3797
 
-#a.	Describe what you would do if the goal was not to study the gender pay gap at companies, but for individuals at companies. 
+## We need to rerun the optimal sample because we stratified w.r.t. the median income earlier, not the mean
+sample_optim <- stratify(gpg_core, 
+                         "division", 
+                         n=1000, 
+                         seed=402,
+                         optim=TRUE, 
+                         optimVar = "DiffMeanHourlyPercent")
 
-#b.	Use the strategy you describe under a. to finally say something about the size of the gender pay gap.
+# Surveydesign for stratified sample
+stratdesign_optim <- svydesign(ids=sample_optim$uuid, 
+                         fpc=~fpc, 
+                         strata = ~Stratum,
+                         data = sample_optim)
 
-- TODO:
+# Calculate the population value & design effect
+stratdesign_optim_mean <- svymean(~DiffMedianHourlyPercent, design=stratdesign_optim, deff=TRUE)
 
-- Stratification:
-  * Compare the two variables
-  * Recode the SIC variables
-  * Horvitz-thompson (Neyman) optimal allocation
-  * How to oversample from specific strata to reduce overall variance
-  (See code Peter week 5 on stratification)
-  
-  
-throwaway work:
-#show the violin plot here to show that the gap differs among size groups (the reason to stratify here)
-Another variable on which to stratify is EmployerSize. The data are already provided in seven categories based on the number of employees. Therefore, by using these as the strata, we can improve both the precision of the estimates within each strata, and thus the overall precision. We could not sample an equal number (1000 / 7) of companies from each strata, owing to there not being a sufficient number of companies in each strata. Therefore, we sampled from each size division with equal probability.  (CHECK! THIS WAS CONFUSING). (We have roughly taken a proportion of 1000/6713 = 14.89% from each size division). In order to do this, it was first necessary to calculate the proportion of all companies falling in each size division. This proportion was then multiplied by 1000 for each strata to achieve the desired sample size. Given that we preferred our sample to be at most 1000 companies, we rounded the final stratum sizes down where necessary. 
-#report SE and confidence intervals, talk about the features (errors) of this particular design 
+# Calculate sample size
+n <- nrow(sample_optim)
+svym_strat_opt <- svymean(~DiffMeanHourlyPercent, design=stratdesign_optim)
+Ybar = as.numeric(svym_strat_opt)
+se_opt = as.numeric(SE(svym_strat_opt))
+S2 = (n*se_opt^2)/(1-n/N)
+nprime = (S2/Ybar^2)/(CV^2)
+n_opt = nprime/((nprime/N)+1)
+# n > 3643
+```
 
-Given that the premise of stratified samples is to increase the precision/ lower the SE, this sample has not performed its desired function. Therefore, it was necessary for us to implement an optimal allocation strategy, so that each size division is more apporopriately represented in the sample. It is of interest to take a larger sample from strata in which there is more variation. For this, we (attempted to use) used the Neyman Allocation. ... 
+Another common way in which to sample is to base the sample size around a prerequired level of precision. In this situation, the precision of the sample estimates dictates the sample size, as opposed to a fixed budget or sample size. With this technique in mind, we aim to find the sample size required in order to achieve a coefficient of variation of $0.01$. The coefficient of variation (CV) is defined as the standard error of the wage gap, relative to the size of the wage gap - a standardised error term.
 
-The Gender Pay Gap defines the difference in hourly wage between men and women. This can be measured either by the mean wage, the median wage, or any other average. It is of interest not only to assess the size of the gender gap across a population, but also to uncover the driving factors behind its existence. For instance, are certain high-wage industries dominated by male workers? Does the population wage gap increase in positions of high wage? Do men and women earn comparable salaries for comparable jobs? 
+```{r, eval=FALSE}
+## This code block is heavy and will NOT be evaluated a compilation time. We ran the algo in advance and stored the results
+res <- vector("list", 10)
+for(i in seq_along(1:10)) {
+  res[[i]] <- required_sample_size(gpg_core, "division", 1000, nrow(gpg_core), 50)
+}
+
+## Save result
+saveRDS(res, "data/calc_sample_size_data.rds")
+```
+
+```{r}
+## Load the data from the result above
+res <- readRDS("data/calc_sample_size_data.rds")
+
+## Get bounds
+ssizes <- unlist(lapply(res, function(x) x$final_n))
+min_ssize <- min(ssizes)
+max_ssize <- max(ssizes)
+avg_ssize <- mean(ssizes)
+```
+
+Firstly, we calculated the existing CV, taken from the optimised stratified sample, to be $0.026$. This is significantly higher than the target of $0.01$. We employed two approaches to find the desired sample size. Using manual calculations, we established that the sample size needed to achieve a CV of $0.01$ is $n_{pps}=3797$ and $n_{optim}=3643$ for the PPS and Neyman stratified samples respectively. Additionally, we implemented a computational procedure in which we systematically increased the sample size, $n$, until the CV falls at or below the target of $0.01$. Because this algorithm is not entirely exact^[For example, the algorithm takes a slightly different sample for each iteration. This means that the CV oscillates and at times may increase even though the sample size is increasing and we would expect a *lower* CV], we run the algorithm several times, which leads us to conclude that a required sample size between `r min_ssize` and `r max_ssize` will suffice. The average sample size needed is nearly the same as that derived using manual calculations for the PPS design at $n_{avg} = 3785$.^[We could not execute the algorithm for the Neyman design because of a lack of observations in certain subgroups. Hence, we opted to computationally determine the CV for the PPS sample only.] Therefore, with a level of precision as determined by a CV of $0.01$, it would be necessary only to sample roughly 57\% of UK companies with over $250$ employees, while still obtaining the same information. 
+
+```{r, fig.cap="Results of 10 runs of the algorithm that computes sample size given a CV of 0.01. Each colored line represents an individual run."}
+## Retrieve data for each run
+d <- lapply(1:10, function(x) {
+  tmp <- res[[x]]$data
+  tmp$iteration <- x
+  tmp
+})
+## Bind data
+db <- do.call(rbind.data.frame, d)
+
+## Plot
+ggplot(db, aes(x=n, y=CV, color = as.factor(iteration))) +
+  geom_line(size = 0.9, alpha=0.7) +
+  theme_bw() +
+  scale_color_brewer(palette = "Set3") +
+  scale_x_continuous(name = "Sample size") +
+  scale_y_continuous(name = "Coefficient of Variation") +
+  theme(legend.position = "None") +
+  labs(caption = "NB. each line is one run of the algorithm. The total number of runs is 10.")
+```
+
+```{r}
+# We use the middle number of each group as weight. Except the largest one (20,000 or more) as 20,000 and smallest one as 0
+Weight <- c(0, 250/2, (250+499)/2, (500+999)/2, (1000+4999)/2, (5000+19999)/2, 20000)
+clustermean <- tapply(gpg_core$DiffMeanHourlyPercent,gpg_core$EmployerSize,mean)
+wm_mean <- weighted.mean(clustermean,Weight)
+# From individual perspective, the pay gap for mean is 0.1560
+
+clustermedian <-tapply(gpg_core$DiffMedianHourlyPercent,gpg_core$EmployerSize,mean)
+wm_med <- weighted.mean(clustermedian,Weight)
+# The pay gap for median is 0.1040
+```
+
+It is also of great interest to sample at the level of the individual employee, rather than at the company level. This can be done with a cluster sampling design. This method requires the weighting of the data according to the size of the company. In absence of the exact company size data, we opted to use the midpoints of the size categories as surrogate company sizes. The largest size category was an exception; we used the value of 20,000 to weight these companies. Companies not providing the number of employees were weighted as 0, and thus excluded from this analysis. Using this sampling design, we found that a weighted average for the mean gender pay gap stands at 15.6\%, in favour of men, while the median pay gap stands at 10.4\%, also in favour of men. 
+
+From our analysis we can conclude that, whether measuring the mean or median pay gap, there is a pronouced disparity in wages received by men and women across the UK population. In addition, a sufficient level of information to make inferences on the size of the wage gap can be obtained by taking a markedly smaller sample of companies. Even a simple random sample of $1000$ companies was surprisingly successful in terms of standard error, when the average wage gap was required. This owes partly to the fact that, aside from SIC division, there is very little variation among natural strata across geographic areas or employer size. With very little added effort, a stratified sample can be obtained, which further increases the precision of the estimates. Therefore, when attempting to calculate the population-wide gender pay gap in the future, it would suffice to take a sample of companies. We have also shown that it is possible to achieve a specific level of precision, by drawing a large enough sample. 
 
 \newpage
 \blandscape
 
-# APPENDIX I
+# APPENDIX I: mean/median gender pay gap ("PG") across gender/sic division
 
 ```{r, echo=FALSE}
 ## Also print a table with SIC divisions, order, percentage of males, number of companies in that division & percentage
