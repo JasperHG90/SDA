@@ -221,7 +221,7 @@ library(sampling)
 
 ## Subset data
 gpg_core <- gpg_core %>%
-  dplyr::select(uuid, EmployerSize, DiffMeanHourlyPercent, DiffMedianHourlyPercent, female, male,
+  dplyr::select(uuid, EmployerSize, DiffMeanHourlyPercent, DiffMedianHourlyPercent, female, male, NumEmp,
          division)
 
 # Total number of observations
@@ -586,9 +586,9 @@ Another common way in which to sample is to base the sample size around a prereq
 
 ```{r, eval=FALSE}
 ## This code block is heavy and will NOT be evaluated a compilation time. We ran the algo in advance and stored the results
-res <- vector("list", 10)
-for(i in seq_along(1:10)) {
-  res[[i]] <- required_sample_size(gpg_core, "division", 1000, nrow(gpg_core), 50)
+res <- vector("list", 20)
+for(i in seq_along(1:length(res))) {
+  res[[i]] <- required_sample_size(gpg_core, "division", 1000, nrow(gpg_core), 10)
 }
 
 ## Save result
@@ -610,7 +610,7 @@ Firstly, we calculated the existing CV, taken from the optimised stratified samp
 
 ```{r, fig.cap="Results of 10 runs of the algorithm that computes sample size given a CV of 0.01. Each colored line represents an individual run."}
 ## Retrieve data for each run
-d <- lapply(1:10, function(x) {
+d <- lapply(1:length(res), function(x) {
   tmp <- res[[x]]$data
   tmp$iteration <- x
   tmp
@@ -620,7 +620,7 @@ db <- do.call(rbind.data.frame, d)
 
 ## Plot
 ggplot(db, aes(x=n, y=CV, color = as.factor(iteration))) +
-  geom_line(size = 0.9, alpha=0.7) +
+  geom_line(size = 0.5, alpha=0.7) +
   theme_bw() +
   scale_color_brewer(palette = "Set3") +
   scale_x_continuous(name = "Sample size") +
@@ -639,6 +639,25 @@ wm_mean <- weighted.mean(clustermean,Weight)
 clustermedian <-tapply(gpg_core$DiffMedianHourlyPercent,gpg_core$EmployerSize,mean)
 wm_med <- weighted.mean(clustermedian,Weight)
 # The pay gap for median is 0.1040
+```
+
+```{r, eval=FALSE}
+## Look at #employees and GPG by employer size
+cm <- gpg_core %>%
+  group_by(EmployerSize) %>%
+  summarize(emps = sum(NumEmp),
+            avgmean = mean(DiffMeanHourlyPercent),
+            avgmedian = mean(DiffMedianHourlyPercent),
+            avgbonusmean = mean(DiffMeanBonusPercent),
+            avgbonusmedian = mean(DiffMedianHourlyPercent))
+cm
+
+## Change weights
+cm$avgmean[5] <- 0.12
+cm$avgmean[6] <- 0.13
+
+## Weighted mean
+weighted.mean(cm$avgmean, cm$emps)
 ```
 
 It is also of great interest to sample at the level of the individual employee, rather than at the company level. This can be done with a cluster sampling design. This method requires the weighting of the data according to the size of the company. In absence of the exact company size data, we opted to use the midpoints of the size categories as surrogate company sizes. The largest size category was an exception; we used the value of 20,000 to weight these companies. Companies not providing the number of employees were weighted as 0, and thus excluded from this analysis. Using this sampling design, we found that a weighted average for the mean gender pay gap stands at 15.6\%, in favour of men, while the median pay gap stands at 10.4\%, also in favour of men. 
